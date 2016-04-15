@@ -1,0 +1,31 @@
+devicegroups:
+  a_few_devices:
+    - Samsung S3
+    - Blah fone
+
+  samsung_s4_s5:
+    - Samsung S4 TMobile
+    - Samsung S4 AT&T
+    - Samsung S5 TMobile
+    - Samsung S5 AT&T
+
+  everything:
+    - +a_few_devices
+    - +samsung_s4_s5
+
+defaults:
+    build:
+      - echo "Foo"
+      - echo "Bar"
+
+    android:
+      apk: ./path/to/build.apk
+      apk_instrumentation: ./path/to/instrumentation.apk
+
+    devicegroups:
+      - a_few_devices
+
+branches:
+  master:
+    devicegroups:
+      - everything
