@@ -19,9 +19,12 @@ func (dg *DeviceGroup) Equals(dg2 DeviceGroup) bool {
 	if len(dg1) != len(dg2) {
 		return false
 	}
-	// TODO should not be order dependent
-	for i := range dg1 {
-		if dg2[i] != dg1[i] {
+	existsInDg1 := map[Device]bool{}
+	for _, device := range dg1 {
+		existsInDg1[device] = true
+	}
+	for _, device := range dg2 {
+		if !existsInDg1[device] {
 			return false
 		}
 	}
@@ -59,17 +62,21 @@ func (c1 *AndroidConfig) Equals(c2 *AndroidConfig) bool {
 // perform the build, the location of Android APKs, and the DeviceGroup names
 // to run on.
 type BuildConfig struct {
-	Steps        BuildSteps    `yaml:"build"`
-	Android      AndroidConfig `yaml:"android"`
-	DeviceGroups []string      `yaml:"devicegroups"`
+	Steps            BuildSteps    `yaml:"build"`
+	Android          AndroidConfig `yaml:"android"`
+	DeviceGroupNames []string      `yaml:"devicegroups"`
 }
 
 func (c1 *BuildConfig) Equals(c2 *BuildConfig) bool {
-	if len(c1.DeviceGroups) != len(c2.DeviceGroups) {
+	if len(c1.DeviceGroupNames) != len(c2.DeviceGroupNames) {
 		return false
 	}
-	for i := range c1.DeviceGroups {
-		if c2.DeviceGroups[i] != c1.DeviceGroups[i] {
+	existsInDg1 := map[string]bool{}
+	for _, deviceGroup := range c1.DeviceGroupNames {
+		existsInDg1[deviceGroup] = true
+	}
+	for _, deviceGroup := range c2.DeviceGroupNames {
+		if !existsInDg1[deviceGroup] {
 			return false
 		}
 	}
@@ -112,7 +119,7 @@ func (c1 *Config) Equals(c2 *Config) bool {
 		return false
 	}
 	for k, v1 := range c1.Branches {
-		if v2, ok := c1.Branches[k]; !ok || !v1.Equals(&v2) {
+		if v2, ok := c2.Branches[k]; !ok || !v1.Equals(&v2) {
 			return false
 		}
 	}
@@ -130,8 +137,8 @@ func New(filename string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = config.IsValid()
-	if err != nil {
+	valid, err := config.IsValid()
+	if !valid {
 		return nil, err
 	}
 	return &config, nil
