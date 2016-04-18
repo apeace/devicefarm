@@ -100,6 +100,47 @@ type BuildManifest struct {
 	DeviceGroupNames []string      `yaml:"devicegroups"`
 }
 
+// MergeManfiests merges together two BuildManifests, giving the second manifest
+// priority. In other words, any non-blank field in the second manifest will
+// override the value in the first manifest.
+func MergeManifests(m1 *BuildManifest, m2 *BuildManifest) *BuildManifest {
+	merged := &BuildManifest{}
+	if len(m2.Steps) > 0 {
+		merged.Steps = m2.Steps[:]
+	} else {
+		merged.Steps = m1.Steps[:]
+	}
+	if len(m2.Android.Apk) > 0 {
+		merged.Android.Apk = m2.Android.Apk
+	} else {
+		merged.Android.Apk = m1.Android.Apk
+	}
+	if len(m2.Android.ApkInstrumentation) > 0 {
+		merged.Android.ApkInstrumentation = m2.Android.ApkInstrumentation
+	} else {
+		merged.Android.ApkInstrumentation = m1.Android.ApkInstrumentation
+	}
+	if len(m2.DeviceGroupNames) > 0 {
+		merged.DeviceGroupNames = m2.DeviceGroupNames[:]
+	} else {
+		merged.DeviceGroupNames = m1.DeviceGroupNames[:]
+	}
+	return merged
+}
+
+// IsRunnable returns true and nil if the BuildManifest is properly configured
+// to run, and returns false and an error otherwise. For example, if a BuildManifest
+// has no DeviceGroupNames, it cannot be run.
+func (manifest *BuildManifest) IsRunnable() (bool, error) {
+	if len(manifest.Android.Apk) == 0 || len(manifest.Android.ApkInstrumentation) == 0 {
+		return false, fmt.Errorf("Missing Android apk or apk_instrumentation")
+	}
+	if len(manifest.DeviceGroupNames) == 0 {
+		return false, fmt.Errorf("Missing devicegroups")
+	}
+	return true, nil
+}
+
 // A Config specifies configuration for a particular repo: the names of DeviceGroups,
 // the default BuildManifest, and override BuildManifests for particular branches.
 type Config struct {
@@ -126,6 +167,15 @@ func New(filename string) (*Config, error) {
 	return &config, nil
 }
 
+// IsValid returns true and nil if the Config is valid, and returns false and
+// an error otherwise. Valid does not necessesarily mean that all builds will
+// work, it just means that the config does not have any obvious errors.
+//
+// For example, a config with no `defaults` and no config for the `master`
+// branch could be valid. But if you try to run a build on the `master` branch
+// the build will still fail, because there is no config available.
+//
+// See also BuildManifest#IsRunnable().
 func (config *Config) IsValid() (bool, error) {
 	if len(config.DeviceGroupDefinitions) == 0 {
 		return false, fmt.Errorf("devicegroups must have at least one group")
@@ -136,4 +186,15 @@ func (config *Config) IsValid() (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// BranchManifest returns a BuildManifest for the given branch name, by starting
+// from the Defaults manifest (if any) and merging branch-specific overrides on
+// top of it.
+func (config *Config) BranchManifest(branch string) *BuildManifest {
+	manifest := MergeManifests(&BuildManifest{}, &config.Defaults)
+	if branchOverrides, ok := config.Branches[branch]; ok {
+		manifest = MergeManifests(manifest, &branchOverrides)
+	}
+	return manifest
 }
