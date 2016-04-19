@@ -22,6 +22,8 @@ func TestGitBranch(t *testing.T) {
 	// create git repository, a branch, and commit a file
 	RunAll(tmpDir,
 		"git init",
+		"git config user.email 'devops@ride.com'",
+		"git config user.name 'Devops'",
 		"git checkout -b foobar",
 		"touch foo",
 		"git add foo",
