@@ -1,115 +1,111 @@
 package config
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
-func TestDeviceGroupEquals(t *testing.T) {
-	d1 := DeviceGroup{"foo", "bar"}
-	d2 := DeviceGroup{"bar", "foo"}
-	d3 := DeviceGroup{"foo"}
-	d4 := DeviceGroup{"foo", "baz"}
-	if !d1.Equals(d2) {
-		t.Errorf("Expected %v to equal %v", d1, d2)
+func TestMergeManifests(t *testing.T) {
+	assert := assert.New(t)
+
+	// a complete manifest
+	m1 := BuildManifest{
+		Steps:            BuildSteps{"foo", "bar"},
+		Android:          AndroidConfig{"foo", "bar"},
+		DeviceGroupNames: []string{"foo", "bar"},
 	}
-	if d1.Equals(d3) {
-		t.Errorf("Expected %v to NOT equal %v", d1, d3)
+
+	// m2 should override only Steps
+	m2 := BuildManifest{
+		Steps: BuildSteps{"bar", "foo"},
 	}
-	if d1.Equals(d4) {
-		t.Errorf("Expected %v to NOT equal %v", d1, d4)
+	merged := MergeManifests(&m1, &m2)
+	assert.Equal(BuildManifest{
+		Steps:            BuildSteps{"bar", "foo"},
+		Android:          AndroidConfig{"foo", "bar"},
+		DeviceGroupNames: []string{"foo", "bar"},
+	}, *merged)
+	// m1 should override everything in m2
+	merged = MergeManifests(&m2, &m1)
+	assert.Equal(m1, *merged)
+
+	// m3 should override only Android.Apk
+	m3 := BuildManifest{
+		Android: AndroidConfig{Apk: "bar"},
 	}
+	merged = MergeManifests(&m1, &m3)
+	assert.Equal(BuildManifest{
+		Steps:            BuildSteps{"foo", "bar"},
+		Android:          AndroidConfig{"bar", "bar"},
+		DeviceGroupNames: []string{"foo", "bar"},
+	}, *merged)
+	// m1 should override everything in m3
+	merged = MergeManifests(&m3, &m1)
+	assert.Equal(m1, *merged)
+
+	// m4 should override only DeviceGroupNames
+	m4 := BuildManifest{
+		DeviceGroupNames: []string{"bar", "foo"},
+	}
+	merged = MergeManifests(&m1, &m4)
+	assert.Equal(BuildManifest{
+		Steps:            BuildSteps{"foo", "bar"},
+		Android:          AndroidConfig{"foo", "bar"},
+		DeviceGroupNames: []string{"bar", "foo"},
+	}, *merged)
+	// m1 should override everything in m4
+	merged = MergeManifests(&m4, &m1)
+	assert.Equal(m1, *merged)
 }
 
-func TestBuildStepEquals(t *testing.T) {
-	b1 := BuildSteps{"foo", "bar"}
-	b2 := BuildSteps{"foo", "bar"}
-	b3 := BuildSteps{"bar", "foo"}
-	b4 := BuildSteps{"foo"}
-	b5 := BuildSteps{"foo", "baz"}
-	if !b1.Equals(b2) {
-		t.Errorf("Expected %v to equal %v", b1, b2)
-	}
-	if b1.Equals(b3) {
-		t.Errorf("Expected %v to NOT equal %v", b1, b3)
-	}
-	if b1.Equals(b4) {
-		t.Errorf("Expected %v to NOT equal %v", b1, b5)
-	}
-	if b1.Equals(b4) {
-		t.Errorf("Expected %v to NOT equal %v", b1, b5)
-	}
-}
+func TestBuildManifestIsRunnable(t *testing.T) {
+	assert := assert.New(t)
 
-func TestBuildConfigEquals(t *testing.T) {
-	b1 := BuildConfig{DeviceGroupNames: []string{"foo", "bar"}}
-	b2 := BuildConfig{DeviceGroupNames: []string{"bar", "foo"}}
-	b3 := BuildConfig{DeviceGroupNames: []string{"foo"}}
-	b4 := BuildConfig{DeviceGroupNames: []string{"foo", "baz"}}
-	if !b1.Equals(&b2) {
-		t.Errorf("Expected %v to equal %v", b1, b2)
+	// a complete manifest
+	m1 := BuildManifest{
+		Steps:            BuildSteps{"foo", "bar"},
+		Android:          AndroidConfig{"foo", "bar"},
+		DeviceGroupNames: []string{"foo", "bar"},
 	}
-	if b1.Equals(&b3) {
-		t.Errorf("Expected %v to NOT equal %v", b1, b3)
-	}
-	if b1.Equals(&b4) {
-		t.Errorf("Expected %v to NOT equal %v", b1, b4)
-	}
-}
+	runnable, err := m1.IsRunnable()
+	assert.True(runnable)
+	assert.Nil(err)
 
-func TestConfigIsValid(t *testing.T) {
-	c1 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"bar"}}}
-	c2 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{}}}
-	c3 := Config{}
-	if ok, err := c1.IsValid(); !ok {
-		t.Errorf("Expected %v to be valid but got %v", c1, err)
+	// missing Android.Apk
+	m2 := BuildManifest{
+		Steps:            BuildSteps{"foo", "bar"},
+		Android:          AndroidConfig{ApkInstrumentation: "bar"},
+		DeviceGroupNames: []string{"foo", "bar"},
 	}
-	if ok, _ := c2.IsValid(); ok {
-		t.Errorf("Expected %v to be invalid", c2)
-	}
-	if ok, _ := c3.IsValid(); ok {
-		t.Errorf("Expected %v to be invalid", c3)
-	}
-}
+	runnable, err = m2.IsRunnable()
+	assert.False(runnable)
+	assert.NotNil(err)
 
-func TestConfigEquals(t *testing.T) {
-	c1 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"bar"}}}
-	c2 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"bar"}}}
-	c3 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"baz"}}}
-	c4 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"baz"}, "bar": []Device{"blah"}}}
-	if !c1.Equals(&c2) {
-		t.Errorf("Expected %v to equal %v", c1, c2)
+	// missing a device group
+	m3 := BuildManifest{
+		Steps:            BuildSteps{"foo", "bar"},
+		Android:          AndroidConfig{"foo", "bar"},
+		DeviceGroupNames: []string{},
 	}
-	if c1.Equals(&c3) {
-		t.Errorf("Expected %v to NOT equal %v", c1, c3)
-	}
-	if c1.Equals(&c4) {
-		t.Errorf("Expected %v to NOT equal %v", c1, c4)
-	}
-	c5 := Config{Defaults: BuildConfig{Steps: BuildSteps{"foo", "bar"}}}
-	c6 := Config{Defaults: BuildConfig{Steps: BuildSteps{"bar", "foo"}}}
-	if c5.Equals(&c6) {
-		t.Errorf("Expected %v to NOT equal %v", c5, c6)
-	}
-	c7 := Config{Branches: map[string]BuildConfig{"master": BuildConfig{}}}
-	c8 := Config{Branches: map[string]BuildConfig{"staging": BuildConfig{}}}
-	c9 := Config{Branches: map[string]BuildConfig{"staging": BuildConfig{}, "master": BuildConfig{}}}
-	if c7.Equals(&c8) {
-		t.Errorf("Expected %v to NOT equal %v", c7, c8)
-	}
-	if c7.Equals(&c9) {
-		t.Errorf("Expected %v to NOT equal %v", c7, c9)
-	}
+	runnable, err = m3.IsRunnable()
+	assert.False(runnable)
+	assert.NotNil(err)
 }
 
 func TestNew(t *testing.T) {
+	assert := assert.New(t)
+
+	// a valid, complete config
 	config, err := New("testdata/config.yml")
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(err)
+
+	// build the expected config
 	deviceGroupDefs := map[string]DeviceGroup{
 		"a_few_devices": {"Samsung S3", "Blah fone"},
 		"samsung_s4_s5": {"Samsung S4 TMobile", "Samsung S4 AT&T", "Samsung S5 TMobile", "Samsung S5 AT&T"},
 		"everything":    {"+a_few_devices", "+samsung_s4_s5"},
 	}
-	defaultBuild := BuildConfig{
+	defaultBuild := BuildManifest{
 		Steps: BuildSteps{"echo \"Foo\"", "echo \"Bar\""},
 		Android: AndroidConfig{
 			Apk:                "./path/to/build.apk",
@@ -117,46 +113,79 @@ func TestNew(t *testing.T) {
 		},
 		DeviceGroupNames: []string{"a_few_devices"},
 	}
-	masterBuild := BuildConfig{
+	masterBuild := BuildManifest{
 		DeviceGroupNames: []string{"everything"},
 	}
-	expected := &Config{
+	expected := Config{
 		DeviceGroupDefinitions: deviceGroupDefs,
 		Defaults:               defaultBuild,
-		Branches:               map[string]BuildConfig{"master": masterBuild},
+		Branches:               map[string]BuildManifest{"master": masterBuild},
 	}
-	if !expected.Equals(config) {
-		t.Errorf("Expected %v to equal %v", expected, config)
-	}
+
+	// config from the file should match the expected config
+	assert.Equal(expected, *config)
 }
 
 func TestNewInvalid(t *testing.T) {
+	assert := assert.New(t)
+
+	// invalid because it is not valid YAML
 	config, err := New("testdata/config_invalid.yml")
-	if err == nil {
-		t.Errorf("Expected non-nil error, got %v", err)
-	}
-	if config != nil {
-		t.Errorf("Expected nil result, got %v", config)
-	}
+	assert.NotNil(err)
+	assert.Nil(config)
+
+	// file does not exist
 	config, err = New("testdata/non_existant.yml")
-	if err == nil {
-		t.Errorf("Expected non-nil error, got %v", err)
-	}
-	if config != nil {
-		t.Errorf("Expected nil result, got %v", config)
-	}
+	assert.NotNil(err)
+	assert.Nil(config)
+
+	// contains valid YAML but invalid properties
 	config, err = New("testdata/config_bad.yml")
-	if err == nil {
-		t.Error("Expected non-nil error")
-	}
-	if config != nil {
-		t.Errorf("Expected nil result, got %v", config)
-	}
+	assert.NotNil(err)
+	assert.Nil(config)
+
+	// missing devicegroups
 	config, err = New("testdata/config_incomplete.yml")
-	if err == nil {
-		t.Error("Expected non-nil error")
+	assert.NotNil(err)
+	assert.Nil(config)
+}
+
+func TestConfigIsValid(t *testing.T) {
+	assert := assert.New(t)
+
+	// a valid config
+	c1 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"bar"}}}
+	ok, err := c1.IsValid()
+	assert.True(ok)
+	assert.Nil(err)
+
+	// invalid due to empty device group def
+	c2 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{}}}
+	ok, err = c2.IsValid()
+	assert.False(ok)
+	assert.NotNil(err)
+
+	// invalid due to no device group defs
+	c3 := Config{}
+	ok, err = c3.IsValid()
+	assert.False(ok)
+	assert.NotNil(err)
+}
+
+func TestConfigBranchManifest(t *testing.T) {
+	assert := assert.New(t)
+
+	config, err := New("testdata/config.yml")
+	assert.Nil(err)
+
+	// build the expected manifest
+	masterManifest := BuildManifest{
+		Steps: BuildSteps{"echo \"Foo\"", "echo \"Bar\""},
+		Android: AndroidConfig{
+			Apk:                "./path/to/build.apk",
+			ApkInstrumentation: "./path/to/instrumentation.apk",
+		},
+		DeviceGroupNames: []string{"everything"},
 	}
-	if config != nil {
-		t.Errorf("Expected nil result, got %v", config)
-	}
+	assert.Equal(masterManifest, *config.BranchManifest("master"))
 }

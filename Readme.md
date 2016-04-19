@@ -33,13 +33,13 @@ To run tests:
 go test ./...
 ```
 
-To get test coverage, you need to run one package at a time:
+To get a more detailed report, including coverage info, run this script:
 
 ```
-cd config
-go test -cover -coverprofile=coverage.out
-go tool cover -html=coverage.out -o coverage.html
-open coverage.html
+# run tests with coverage
+./test.sh
+# open coverage report
+open devicefarm.html
 ```
 
 ## Documentation
