@@ -11,7 +11,7 @@ echo "mode: atomic" > devicefarm.out
 PACKAGES=$(go list ./... | sed -E -e "s/^github.com\/ride\/devicefarm\/([^\/]+)$/\1/" -e 'tx' -e 'd' -e ':x')
 for package in $PACKAGES
 do
-  echo ">> $package"
+  echo ">> package $package"
   go vet github.com/ride/devicefarm/$package
   godep go test -race -v -cover -coverprofile="$package.out" github.com/ride/devicefarm/$package
   cat "$package.out" | grep -v "mode:" >> devicefarm.out
