@@ -65,3 +65,29 @@ func TestRunAll(t *testing.T) {
 	assert.Equal(CmdOutput{"echo Foo", "Foo", nil}, *outputs[0])
 	assert.NotNil(outputs[1].Err)
 }
+
+func TestCopyFile(t *testing.T) {
+	assert := assert.New(t)
+	tmpDir, err := ioutil.TempDir("", "devicefarm")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	dstFilename := path.Join(tmpDir, "foo.txt")
+
+	// should fail because source file does not exist
+	err = CopyFile("testdata/does-not-exist.txt", dstFilename)
+	assert.NotNil(err)
+
+	// should fail because blank filename cannot be created
+	err = CopyFile("testdata/foo.txt", "")
+	assert.NotNil(err)
+
+	// should succeed
+	err = CopyFile("testdata/foo.txt", dstFilename)
+	assert.Nil(err)
+	bytes, err := ioutil.ReadFile(dstFilename)
+	assert.Nil(err)
+	assert.Equal("Foo\n", string(bytes))
+}

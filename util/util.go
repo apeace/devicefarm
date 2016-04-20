@@ -5,6 +5,8 @@ package util
 
 import (
 	"errors"
+	"io"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -57,4 +59,33 @@ func RunAll(dir string, commands ...string) []*CmdOutput {
 		}
 	}
 	return outputs[0 : i+1]
+}
+
+// CopyFile copies the contents of one file to another file. If the
+// dst file already exists, its contents will be replaced.
+func CopyFile(src, dst string) (err error) {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return
+	}
+	defer func() {
+		closeError := dstFile.Close()
+		if err == nil {
+			err = closeError
+		}
+	}()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		// TODO: Not sure how to add test coverage for this line
+		return
+	}
+	err = dstFile.Sync()
+	return
 }
