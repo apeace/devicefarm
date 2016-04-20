@@ -49,8 +49,9 @@ func RunAll(dir string, commands ...string) []*CmdOutput {
 	var i int
 	var command string
 	for i, command = range commands {
+		command = strings.TrimSpace(command)
 		out, err := Cmd(dir, command).Output()
-		outputs[i] = &CmdOutput{command, string(out), err}
+		outputs[i] = &CmdOutput{command, strings.TrimSpace(string(out)), err}
 		if err != nil {
 			break
 		}

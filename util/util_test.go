@@ -62,6 +62,6 @@ func TestRunAll(t *testing.T) {
 		"exit 1",
 		"echo Bar")
 	assert.Equal(2, len(outputs))
-	assert.Equal(CmdOutput{"echo Foo", "Foo\n", nil}, *outputs[0])
+	assert.Equal(CmdOutput{"echo Foo", "Foo", nil}, *outputs[0])
 	assert.NotNil(outputs[1].Err)
 }
