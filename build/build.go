@@ -1,3 +1,9 @@
+/*
+
+Package build provides data structures and functions to run app builds and
+Device Farm tests.
+
+*/
 package build
 
 import (
@@ -6,6 +12,9 @@ import (
 	"log"
 )
 
+// A Build specifies all information needed to run a local app build: the
+// working directory, the current Git branch of that directory, the full
+// repo config, and the particular manifest for the given branch.
 type Build struct {
 	Dir      string
 	Branch   string
@@ -13,6 +22,7 @@ type Build struct {
 	Manifest *config.BuildManifest
 }
 
+// Creates a new Build from a directory and a config file
 func New(dir string, configFile string) (*Build, error) {
 	config, err := config.New(configFile)
 	if err != nil {
@@ -35,6 +45,8 @@ func New(dir string, configFile string) (*Build, error) {
 	return &build, nil
 }
 
+// Runs the build steps specified in this build's manifest, returning an error
+// if any of the build steps produced an error
 func (build *Build) Run() error {
 	outputs := util.RunAll(build.Dir, []string(build.Manifest.Steps)...)
 	for _, output := range outputs {
