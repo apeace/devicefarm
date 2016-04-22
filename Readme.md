@@ -30,7 +30,7 @@ go run main.go config/testdata/config.yml
 To run tests:
 
 ```
-go test ./...
+godep go test ./...
 ```
 
 To get a more detailed report, including coverage info, run this script:
