@@ -30,7 +30,7 @@ go run main.go config/testdata/config.yml
 To run tests:
 
 ```
-go test ./...
+godep go test ./...
 ```
 
 To get a more detailed report, including coverage info, run this script:
@@ -39,7 +39,7 @@ To get a more detailed report, including coverage info, run this script:
 # run tests with coverage
 ./test.sh
 # open coverage report
-open devicefarm.html
+open coverage.html
 ```
 
 ## Documentation

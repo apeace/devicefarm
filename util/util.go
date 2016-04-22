@@ -5,6 +5,8 @@ package util
 
 import (
 	"errors"
+	"io"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -49,11 +51,41 @@ func RunAll(dir string, commands ...string) []*CmdOutput {
 	var i int
 	var command string
 	for i, command = range commands {
+		command = strings.TrimSpace(command)
 		out, err := Cmd(dir, command).Output()
-		outputs[i] = &CmdOutput{command, string(out), err}
+		outputs[i] = &CmdOutput{command, strings.TrimSpace(string(out)), err}
 		if err != nil {
 			break
 		}
 	}
 	return outputs[0 : i+1]
+}
+
+// CopyFile copies the contents of one file to another file. If the
+// dst file already exists, its contents will be replaced.
+func CopyFile(src, dst string) (err error) {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return
+	}
+	defer func() {
+		closeError := dstFile.Close()
+		if err == nil {
+			err = closeError
+		}
+	}()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		// TODO: Not sure how to add test coverage for this line
+		return
+	}
+	err = dstFile.Sync()
+	return
 }

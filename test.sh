@@ -6,21 +6,22 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-echo "mode: atomic" > devicefarm.out
+go vet
+
+echo "mode: atomic" > coverage.out
 
 PACKAGES=$(go list ./... | sed -E -e "s/^github.com\/ride\/devicefarm\/([^\/]+)$/\1/" -e 'tx' -e 'd' -e ':x')
 for package in $PACKAGES
 do
-  echo ">> $package"
-  go vet github.com/ride/devicefarm/$package
+  echo ">> package $package"
   godep go test -race -v -cover -coverprofile="$package.out" github.com/ride/devicefarm/$package
-  cat "$package.out" | grep -v "mode:" >> devicefarm.out
+  cat "$package.out" | grep -v "mode:" >> coverage.out
   rm "$package.out"
 done
 
 ARTIFACTS=${CIRCLE_ARTIFACTS:-""}
-go tool cover -html="devicefarm.out" -o="devicefarm.html"
-rm devicefarm.out
+go tool cover -html="coverage.out" -o="coverage.html"
+rm coverage.out
 if [ ! -z "$ARTIFACTS" ]; then
-  mv "devicefarm.html" "$ARTIFACTS/"
+  mv "coverage.html" "$ARTIFACTS/"
 fi

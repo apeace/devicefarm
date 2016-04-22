@@ -22,9 +22,6 @@ defaults:
       apk: ./path/to/build.apk
       apk_instrumentation: ./path/to/instrumentation.apk
 
-    devicegroups:
-      - a_few_devices
-
 branches:
   master:
     devicegroups:
