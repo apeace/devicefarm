@@ -111,7 +111,7 @@ func TestNew(t *testing.T) {
 			Apk:                "./path/to/build.apk",
 			ApkInstrumentation: "./path/to/instrumentation.apk",
 		},
-		DeviceGroupNames: []string{"a_few_devices"},
+		DeviceGroupNames: nil,
 	}
 	masterBuild := BuildManifest{
 		DeviceGroupNames: []string{"everything"},
