@@ -39,7 +39,7 @@ To get a more detailed report, including coverage info, run this script:
 # run tests with coverage
 ./test.sh
 # open coverage report
-open devicefarm.html
+open coverage.html
 ```
 
 ## Documentation
