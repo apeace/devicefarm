@@ -10,7 +10,7 @@ Work in progress.
 Make sure you setup `$GOPATH` and add `$GOPATH/bin` to your `$PATH`.
 
 ```
-go get github.com/tools/godep
+go get -u github.com/kardianos/govendor
 mkdir -p $GOPATH/src/github.com/ride/
 cd $GOPATH/src/github.com/ride/
 git clone git@github.com:ride/devicefarm.git
@@ -19,18 +19,14 @@ cd devicefarm
 
 ## Running
 
-Right now the main binary just validates a config file:
-
-```
-go run main.go config/testdata/config.yml
-```
+The main binary is WIP, right now library code is being developed.
 
 ## Testing
 
 To run tests:
 
 ```
-godep go test ./...
+govendor test +local
 ```
 
 To get a more detailed report, including coverage info, run this script:
@@ -38,6 +34,7 @@ To get a more detailed report, including coverage info, run this script:
 ```
 # run tests with coverage
 ./test.sh
+
 # open coverage report
 open coverage.html
 ```
@@ -54,15 +51,18 @@ open "http://localhost:8080/pkg/github.com/ride/devicefarm/"
 
 ## Adding Dependencies
 
-Use `godep` from the project root to add new dependencies. For example,
-here's how you would add package `foo/bar`:
-
 ```
+# go to the project root
 cd $GOPATH/src/github.com/ride/devicefarm
-go get foo/bar
-# edit code to import foo/bar
-godep save ./...
-```
 
-The package should appear in the `vendor/` directory, which you should
-commit.
+# add dependency foo/bar (usually will be something like github.com/foo/bar)
+go get foo/bar
+
+# now edit code to import foo/bar and use it...
+
+# now save the dependency
+govendor add +external
+
+# and commit it
+git add --all vendor/
+```

@@ -14,7 +14,7 @@ PACKAGES=$(go list ./... | sed -E -e "s/^github.com\/ride\/devicefarm\/([^\/]+)$
 for package in $PACKAGES
 do
   echo ">> package $package"
-  godep go test -race -v -cover -coverprofile="$package.out" github.com/ride/devicefarm/$package
+  go test -race -v -cover -coverprofile="$package.out" github.com/ride/devicefarm/$package
   cat "$package.out" | grep -v "mode:" >> coverage.out
   rm "$package.out"
 done
