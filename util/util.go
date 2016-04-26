@@ -6,6 +6,7 @@ package util
 import (
 	"errors"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -52,6 +53,7 @@ func RunAll(dir string, commands ...string) []*CmdOutput {
 	var command string
 	for i, command = range commands {
 		command = strings.TrimSpace(command)
+		log.Println("$ " + command)
 		out, err := Cmd(dir, command).Output()
 		outputs[i] = &CmdOutput{command, strings.TrimSpace(string(out)), err}
 		if err != nil {
