@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/devicefarm/devicefarmiface"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 const ENV_ACCESS_KEY = "AWS_ACCESS_KEY_ID"
@@ -59,4 +60,23 @@ func NewClient(creds *credentials.Credentials) *DeviceFarm {
 	})
 	client := devicefarm.New(sess)
 	return &DeviceFarm{client}
+}
+
+func (df *DeviceFarm) ListDevices(search string) (result []string, err error) {
+	result = []string{}
+	search = strings.ToLower(search)
+	doSearch := len(search) > 0
+	params := &devicefarm.ListDevicesInput{}
+	r, err := df.Client.ListDevices(params)
+	if err != nil {
+		return
+	}
+	for _, device := range r.Devices {
+		deviceName := *device.Name
+		if doSearch && !strings.Contains(strings.ToLower(deviceName), search) {
+			continue
+		}
+		result = append(result, deviceName)
+	}
+	return
 }
