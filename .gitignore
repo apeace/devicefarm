@@ -1,4 +1,9 @@
-**/coverage.html
-**/coverage.out
+# main binary
 devicefarm
+
+# coverage files (see test.sh)
+**/coverage.html
+**/*.out
+
+# vim swap files
 **/*.swp

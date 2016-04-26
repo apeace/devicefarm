@@ -1,7 +1,17 @@
 dependencies:
   override:
-    - echo "No need to install dependencies, they are vendored"
+    # no need to install dependencies, they are vendored
+    #
+    # but because Circle makes no sense, we have to setup our own Go workspace...
+    #
+    # first, create the workspace directory for our github org
+    - mkdir -p $HOME/.go_workspace/src/github.com/$CIRCLE_PROJECT_USERNAME
+    # next, link the source code into the workspace
+    - ln -fs $HOME/$CIRCLE_PROJECT_REPONAME $HOME/.go_workspace/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+    # now, add this workspace to $GOPATH
+    - echo 'export GOPATH=$HOME/.go_workspace:$GOPATH' >> ~/.circlerc
 
 test:
   override:
-    - ./test.sh
+    # now we can CD into the project and run our test script
+    - cd $HOME/.go_workspace/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME && ./test.sh
