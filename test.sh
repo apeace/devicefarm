@@ -22,7 +22,8 @@ echo "mode: atomic" > coverage.out
 PACKAGES=$(go list ./... | grep -v "vendor" | sed -E -e "s/.*$PROJECT_NAME\/([^\/]+)$/\1/" -e 'tx' -e 'd' -e ':x')
 
 # if user ran as `./test.sh package`, only test the given package
-if [ ! -z $1 ]; then
+ARG=${1:-""}
+if [ ! -z $ARG ]; then
   PACKAGES=$1
 fi
 
