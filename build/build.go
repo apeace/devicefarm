@@ -50,8 +50,6 @@ func New(dir string, configFile string) (*Build, error) {
 func (build *Build) Run() error {
 	outputs := util.RunAll(build.Dir, []string(build.Manifest.Steps)...)
 	for _, output := range outputs {
-		log.Println("$ " + output.Cmd)
-		log.Println(output.Output)
 		if output.Err != nil {
 			log.Println(output.Err)
 			return output.Err

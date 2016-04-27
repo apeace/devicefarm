@@ -1,7 +1,10 @@
 package awsutil
 
 import (
+	"errors"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -53,4 +56,35 @@ func TestNewClient(t *testing.T) {
 	creds := credentials.NewStaticCredentials("access-key", "secret", "")
 	df := NewClient(creds)
 	assert.NotNil(df)
+}
+
+func TestListDevices(t *testing.T) {
+	assert := assert.New(t)
+
+	// mock client that returns one device
+	mock := &MockClient{}
+	mockDevice1 := &devicefarm.Device{Name: aws.String("Test device")}
+	mockOutput := &devicefarm.ListDevicesOutput{Devices: []*devicefarm.Device{mockDevice1}}
+	mock.enqueue(mockOutput, nil)
+	client := &DeviceFarm{mock}
+
+	// blank search should return all devices
+	result, err := client.ListDevices("")
+	assert.Nil(err)
+	assert.Equal([]string{"Test device"}, result)
+
+	// add another device to the list
+	mockDevice2 := &devicefarm.Device{Name: aws.String("Another device")}
+	mockOutput.Devices = append(mockOutput.Devices, mockDevice2)
+	mock.enqueue(mockOutput, nil)
+
+	// search should only return the second device
+	result, err = client.ListDevices("another")
+	assert.Nil(err)
+	assert.Equal([]string{"Another device"}, result)
+
+	// enqueue an error
+	mock.enqueue(nil, errors.New("Fake error"))
+	result, err = client.ListDevices("")
+	assert.NotNil(err)
 }
