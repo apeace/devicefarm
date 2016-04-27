@@ -123,6 +123,12 @@
 			"revisionTime": "2016-04-25T17:26:10Z"
 		},
 		{
+			"checksumSHA1": "pTYxaQIlK/T3oQZ2zvAftEmKke0=",
+			"path": "github.com/codegangsta/cli",
+			"revision": "4733699ce30faa633c4db36ebfbe427963593d7d",
+			"revisionTime": "2016-04-26T02:47:03Z"
+		},
+		{
 			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
 			"path": "github.com/davecgh/go-spew/spew",

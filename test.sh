@@ -17,9 +17,16 @@ PROJECT_NAME=${CIRCLE_PROJECT_REPONAME:-${PWD##*/}}
 # run of `go test -cover`, but we only want it to appear once
 echo "mode: atomic" > coverage.out
 
-# loop through every sub-package, excluding the vendor directory,
+# get every sub-package, excluding the vendor directory,
 # and excluding the main (top-level) package.
 PACKAGES=$(go list ./... | grep -v "vendor" | sed -E -e "s/.*$PROJECT_NAME\/([^\/]+)$/\1/" -e 'tx' -e 'd' -e ':x')
+
+# if user ran as `./test.sh package`, only test the given package
+ARG=${1:-""}
+if [ ! -z $ARG ]; then
+  PACKAGES=$1
+fi
+
 for package in $PACKAGES
 do
   echo ">> package $package"
