@@ -61,30 +61,56 @@ func TestNewClient(t *testing.T) {
 func TestListDevices(t *testing.T) {
 	assert := assert.New(t)
 
-	// mock client that returns one device
+	// fake devices
+	androidDevice := &devicefarm.Device{
+		Name:     aws.String("Samsung Galaxy S3"),
+		Platform: aws.String(devicefarm.DevicePlatformAndroid),
+	}
+	iosDevice := &devicefarm.Device{
+		Name:     aws.String("iPhone 6S"),
+		Platform: aws.String(devicefarm.DevicePlatformIos),
+	}
+
+	// mock client and ListDevicesOutput
 	mock := &MockClient{}
-	mockDevice1 := &devicefarm.Device{Name: aws.String("Test device")}
-	mockOutput := &devicefarm.ListDevicesOutput{Devices: []*devicefarm.Device{mockDevice1}}
-	mock.enqueue(mockOutput, nil)
 	client := &DeviceFarm{mock}
+	output := &devicefarm.ListDevicesOutput{}
 
-	// blank search should return all devices
-	result, err := client.ListDevices("")
+	// add both devices and enqueue mock output
+	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
+	mock.enqueue(output, nil)
+
+	// blank search should return both devices
+	result, err := client.ListDevices("", false, false)
 	assert.Nil(err)
-	assert.Equal([]string{"Test device"}, result)
+	assert.Equal([]string{"Samsung Galaxy S3", "iPhone 6S"}, result)
 
-	// add another device to the list
-	mockDevice2 := &devicefarm.Device{Name: aws.String("Another device")}
-	mockOutput.Devices = append(mockOutput.Devices, mockDevice2)
-	mock.enqueue(mockOutput, nil)
+	// re-enqueue same response
+	mock.enqueue(output, nil)
 
-	// search should only return the second device
-	result, err = client.ListDevices("another")
+	// search should only return the iphone
+	result, err = client.ListDevices("iphone", false, false)
 	assert.Nil(err)
-	assert.Equal([]string{"Another device"}, result)
+	assert.Equal([]string{"iPhone 6S"}, result)
+
+	// re-enqueue same response
+	mock.enqueue(output, nil)
+
+	// android filter should only return the android phone
+	result, err = client.ListDevices("", true, false)
+	assert.Nil(err)
+	assert.Equal([]string{"Samsung Galaxy S3"}, result)
+
+	// re-enqueue same response
+	mock.enqueue(output, nil)
+
+	// ios filter should only return the iphone
+	result, err = client.ListDevices("", false, true)
+	assert.Nil(err)
+	assert.Equal([]string{"iPhone 6S"}, result)
 
 	// enqueue an error
 	mock.enqueue(nil, errors.New("Fake error"))
-	result, err = client.ListDevices("")
+	result, err = client.ListDevices("", false, false)
 	assert.NotNil(err)
 }
