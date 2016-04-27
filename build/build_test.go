@@ -67,16 +67,16 @@ func TestBuildRun(t *testing.T) {
 	build := Build{
 		Dir: tmpDir,
 		Manifest: &config.BuildManifest{
-			Steps:            config.BuildSteps{"echo Foo", "echo Bar"},
-			Android:          config.AndroidConfig{},
-			DeviceGroupNames: []string{},
+			Steps:           []string{"echo Foo", "echo Bar"},
+			Android:         config.AndroidConfig{},
+			DevicePoolNames: []string{},
 		},
 	}
 	err = build.Run()
 	assert.Nil(err)
 
 	// should fail because "exit 1" produces an error
-	build.Manifest.Steps = config.BuildSteps{"echo Foo", "exit 1"}
+	build.Manifest.Steps = []string{"echo Foo", "exit 1"}
 	err = build.Run()
 	assert.NotNil(err)
 }

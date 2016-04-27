@@ -83,7 +83,7 @@ func TestListDevices(t *testing.T) {
 	// blank search should return both devices
 	result, err := client.ListDevices("", false, false)
 	assert.Nil(err)
-	assert.Equal([]string{"Samsung Galaxy S3", "iPhone 6S"}, result)
+	assert.Equal([]*devicefarm.Device{androidDevice, iosDevice}, result)
 
 	// re-enqueue same response
 	mock.enqueue(output, nil)
@@ -91,7 +91,7 @@ func TestListDevices(t *testing.T) {
 	// search should only return the iphone
 	result, err = client.ListDevices("iphone", false, false)
 	assert.Nil(err)
-	assert.Equal([]string{"iPhone 6S"}, result)
+	assert.Equal([]*devicefarm.Device{iosDevice}, result)
 
 	// re-enqueue same response
 	mock.enqueue(output, nil)
@@ -99,7 +99,7 @@ func TestListDevices(t *testing.T) {
 	// android filter should only return the android phone
 	result, err = client.ListDevices("", true, false)
 	assert.Nil(err)
-	assert.Equal([]string{"Samsung Galaxy S3"}, result)
+	assert.Equal([]*devicefarm.Device{androidDevice}, result)
 
 	// re-enqueue same response
 	mock.enqueue(output, nil)
@@ -107,7 +107,7 @@ func TestListDevices(t *testing.T) {
 	// ios filter should only return the iphone
 	result, err = client.ListDevices("", false, true)
 	assert.Nil(err)
-	assert.Equal([]string{"iPhone 6S"}, result)
+	assert.Equal([]*devicefarm.Device{iosDevice}, result)
 
 	// enqueue an error
 	mock.enqueue(nil, errors.New("Fake error"))

@@ -12,13 +12,16 @@ config.Config struct:
 
 Here is an annotated example of what a config file should look like:
 
-	# Device Group definitions. this block defines three Device Groups:
-	# a_few_devices, samsung_s4_st, and everything. The everything group
-	# simply includes both the other groups.
+	# Project ARN. This property is REQUIRED.
+	project_arn: arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0
+
+	# Device Pool definitions. this block defines three Device Pools:
+	# a_few_devices, samsung_s4_s5, and everything. The everything pool
+	# simply includes both the other pools.
 	#
-	# This property is REQUIRED, must have at least one group defined,
-	# and each group must have at least one device.
-	devicegroups:
+	# This property is REQUIRED, must have at least one pool defined,
+	# and each pool must have at least one device.
+	devicepools:
 	  a_few_devices:
 		- Samsung S3
 		- Blah fone
@@ -49,21 +52,21 @@ Here is an annotated example of what a config file should look like:
 		  apk: ./path/to/build.apk
 		  apk_instrumentation: ./path/to/instrumentation.apk
 
-		# The device group names that tests should be run on.
-		devicegroups:
+		# The device pool names that tests should be run on.
+		devicepools:
 		  - a_few_devices
 
 	# Branches defines overrides for particular branches. For each branch,
 	# it accepts the same properties as `defaults`. Branch configs will be
 	# merged with `defaults` so that the specified properties override the
-	# same properties from `defaults`. In this example, only the `devicegroups`
+	# same properties from `defaults`. In this example, only the `devicepools`
 	# property will be overridden for the `master` branch.
 	#
 	# This property is OPTIONAL, but building will fail on a particular branch
 	# unless a full definition is available for that branch.
 	branches:
 	  master:
-		devicegroups:
+		devicepools:
 		  - everything
 
 */
@@ -75,16 +78,6 @@ import (
 	"io/ioutil"
 )
 
-// A Device is just a string: the name of the device.
-type Device string
-
-// A DeviceGroup is just a list of Devices.
-type DeviceGroup []Device
-
-// A BuildSteps is just a list of strings: the bash commands to execute in order
-// to perform the build.
-type BuildSteps []string
-
 // An AndroidConfig specifies the location of APKs after running the build steps.
 type AndroidConfig struct {
 	Apk                string `yaml:"apk"`
@@ -92,12 +85,12 @@ type AndroidConfig struct {
 }
 
 // A BuildManifest specifies the whole configuration for a build: the steps to
-// perform the build, the location of Android APKs, and the DeviceGroup names
+// perform the build, the location of Android APKs, and the DevicePool names
 // to run on.
 type BuildManifest struct {
-	Steps            BuildSteps    `yaml:"build"`
-	Android          AndroidConfig `yaml:"android"`
-	DeviceGroupNames []string      `yaml:"devicegroups"`
+	Steps           []string      `yaml:"build"`
+	Android         AndroidConfig `yaml:"android"`
+	DevicePoolNames []string      `yaml:"devicepools"`
 }
 
 // MergeManfiests merges together two BuildManifests, giving the second manifest
@@ -120,33 +113,34 @@ func MergeManifests(m1 *BuildManifest, m2 *BuildManifest) *BuildManifest {
 	} else {
 		merged.Android.ApkInstrumentation = m1.Android.ApkInstrumentation
 	}
-	if len(m2.DeviceGroupNames) > 0 {
-		merged.DeviceGroupNames = m2.DeviceGroupNames[:]
+	if len(m2.DevicePoolNames) > 0 {
+		merged.DevicePoolNames = m2.DevicePoolNames[:]
 	} else {
-		merged.DeviceGroupNames = m1.DeviceGroupNames[:]
+		merged.DevicePoolNames = m1.DevicePoolNames[:]
 	}
 	return merged
 }
 
 // IsRunnable returns true and nil if the BuildManifest is properly configured
 // to run, and returns false and an error otherwise. For example, if a BuildManifest
-// has no DeviceGroupNames, it cannot be run.
+// has no DevicePoolNames, it cannot be run.
 func (manifest *BuildManifest) IsRunnable() (bool, error) {
 	if len(manifest.Android.Apk) == 0 || len(manifest.Android.ApkInstrumentation) == 0 {
 		return false, fmt.Errorf("Missing Android apk or apk_instrumentation")
 	}
-	if len(manifest.DeviceGroupNames) == 0 {
-		return false, fmt.Errorf("Missing devicegroups")
+	if len(manifest.DevicePoolNames) == 0 {
+		return false, fmt.Errorf("Missing devicepools")
 	}
 	return true, nil
 }
 
-// A Config specifies configuration for a particular repo: the names of DeviceGroups,
+// A Config specifies configuration for a particular repo: the names of DevicePools,
 // the default BuildManifest, and override BuildManifests for particular branches.
 type Config struct {
-	DeviceGroupDefinitions map[string]DeviceGroup   `yaml:"devicegroups"`
-	Defaults               BuildManifest            `yaml:"defaults"`
-	Branches               map[string]BuildManifest `yaml:"branches"`
+	Arn                   string                   `yaml:"project_arn"`
+	DevicePoolDefinitions map[string][]string      `yaml:"devicepool_definitions"`
+	Defaults              BuildManifest            `yaml:"defaults"`
+	Branches              map[string]BuildManifest `yaml:"branches"`
 }
 
 // Creates a new Config from a YAML file.
@@ -177,12 +171,16 @@ func New(filename string) (*Config, error) {
 //
 // See also BuildManifest#IsRunnable().
 func (config *Config) IsValid() (bool, error) {
-	if len(config.DeviceGroupDefinitions) == 0 {
-		return false, fmt.Errorf("devicegroups must have at least one group")
+	// TODO: Use regex valid instead?
+	if len(config.Arn) == 0 {
+		return false, fmt.Errorf("project_arn is required")
 	}
-	for name, devicegroup := range config.DeviceGroupDefinitions {
-		if len(devicegroup) == 0 {
-			return false, fmt.Errorf("devicegroup %s has no devices", name)
+	if len(config.DevicePoolDefinitions) == 0 {
+		return false, fmt.Errorf("devicepools must have at least one pool")
+	}
+	for name, devicepool := range config.DevicePoolDefinitions {
+		if len(devicepool) == 0 {
+			return false, fmt.Errorf("devicepool %s has no devices", name)
 		}
 	}
 	return true, nil

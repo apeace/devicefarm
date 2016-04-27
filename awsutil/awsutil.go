@@ -62,8 +62,8 @@ func NewClient(creds *credentials.Credentials) *DeviceFarm {
 	return &DeviceFarm{client}
 }
 
-func (df *DeviceFarm) ListDevices(search string, androidOnly bool, iosOnly bool) (result []string, err error) {
-	result = []string{}
+func (df *DeviceFarm) ListDevices(search string, androidOnly bool, iosOnly bool) (devices []*devicefarm.Device, err error) {
+	devices = []*devicefarm.Device{}
 	search = strings.ToLower(search)
 	doSearch := len(search) > 0
 	params := &devicefarm.ListDevicesInput{}
@@ -82,7 +82,7 @@ func (df *DeviceFarm) ListDevices(search string, androidOnly bool, iosOnly bool)
 		if iosOnly && *device.Platform != devicefarm.DevicePlatformIos {
 			continue
 		}
-		result = append(result, deviceName)
+		devices = append(devices, device)
 	}
 	return
 }

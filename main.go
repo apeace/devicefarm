@@ -29,24 +29,35 @@ func main() {
 	app.Name = "devicefarm"
 	app.Usage = "Run UI tests in AWS Device Farm"
 
+	// these flags are used for anything which needs the context of
+	// a build directory
+	buildFlags := []cli.Flag{
+		cli.StringFlag{
+			Name:  "dir",
+			Usage: "Working directory of the build",
+			Value: ".",
+		},
+		cli.StringFlag{
+			Name:  "config",
+			Usage: "Config file relative to working directory (or absolute path)",
+			Value: "devicefarm.yml",
+		},
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:      "build",
 			Usage:     "Run build based on YAML config",
 			ArgsUsage: " ",
 			Action:    commandBuild,
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "dir",
-					Usage: "Working directory of the build",
-					Value: ".",
-				},
-				cli.StringFlag{
-					Name:  "config",
-					Usage: "Config file relative to working directory (or absolute path)",
-					Value: "devicefarm.yml",
-				},
-			},
+			Flags:     buildFlags,
+		},
+		{
+			Name:      "devicepools",
+			Usage:     "Sync devicepools with your YAML config",
+			ArgsUsage: " ",
+			Action:    commandDevicePools,
+			Flags:     buildFlags,
 		},
 		{
 			Name:      "devices",
@@ -70,6 +81,57 @@ func main() {
 }
 
 func commandBuild(c *cli.Context) {
+	build := getBuild(c)
+	log.Println(">> Running build... (silencing output)")
+	err := build.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println(">> Build complete")
+}
+
+func commandDevicePools(c *cli.Context) {
+	build := getBuild(c)
+	log.Println(build.Dir)
+}
+
+func commandDevices(c *cli.Context) {
+	client := getClient()
+	search := ""
+	if c.NArg() > 0 {
+		search = c.Args()[0]
+	}
+	androidOnly := c.Bool("android")
+	iosOnly := c.Bool("ios")
+	if androidOnly && iosOnly {
+		log.Fatalln("Cannot use both --android and --ios")
+	}
+	devices, err := client.ListDevices(search, androidOnly, iosOnly)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for _, device := range devices {
+		fmt.Println(*device.Name)
+	}
+}
+
+func findCreds() *credentials.Credentials {
+	ok, creds := awsutil.CredsFromEnv()
+	if !ok {
+		ok, creds = awsutil.CredsFromFile(defaultAwsConfigFile)
+	}
+	if !ok {
+		log.Fatalln("Could not find AWS credentials")
+	}
+	return creds
+}
+
+func getClient() *awsutil.DeviceFarm {
+	creds := findCreds()
+	return awsutil.NewClient(creds)
+}
+
+func getBuild(c *cli.Context) *build.Build {
 	dir := c.String("dir")
 	configFile := c.String("config")
 
@@ -94,46 +156,7 @@ func commandBuild(c *cli.Context) {
 		log.Fatalln(err)
 	}
 
-	log.Println(">> Running build... (silencing output)")
-	err = build.Run()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Println(">> Build complete")
-}
+	log.Println(">> Branch: " + build.Branch)
 
-func commandDevices(c *cli.Context) {
-	client := getClient()
-	search := ""
-	if c.NArg() > 0 {
-		search = c.Args()[0]
-	}
-	androidOnly := c.Bool("android")
-	iosOnly := c.Bool("ios")
-	if androidOnly && iosOnly {
-		log.Fatalln("Cannot use both --android and --ios")
-	}
-	devices, err := client.ListDevices(search, androidOnly, iosOnly)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	for _, device := range devices {
-		fmt.Println(device)
-	}
-}
-
-func findCreds() *credentials.Credentials {
-	ok, creds := awsutil.CredsFromEnv()
-	if !ok {
-		ok, creds = awsutil.CredsFromFile(defaultAwsConfigFile)
-	}
-	if !ok {
-		log.Fatalln("Could not find AWS credentials")
-	}
-	return creds
-}
-
-func getClient() *awsutil.DeviceFarm {
-	creds := findCreds()
-	return awsutil.NewClient(creds)
+	return build
 }
