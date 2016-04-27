@@ -67,9 +67,9 @@ func TestBuildRun(t *testing.T) {
 	build := Build{
 		Dir: tmpDir,
 		Manifest: &config.BuildManifest{
-			Steps:           []string{"echo Foo", "echo Bar"},
-			Android:         config.AndroidConfig{},
-			DevicePoolNames: []string{},
+			Steps:      []string{"echo Foo", "echo Bar"},
+			Android:    config.AndroidConfig{},
+			DevicePool: "",
 		},
 	}
 	err = build.Run()

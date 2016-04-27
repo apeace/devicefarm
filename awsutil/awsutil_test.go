@@ -73,15 +73,20 @@ func TestListDevices(t *testing.T) {
 
 	// mock client and ListDevicesOutput
 	mock := &MockClient{}
-	client := &DeviceFarm{mock}
+	client := &DeviceFarm{mock, nil}
 	output := &devicefarm.ListDevicesOutput{}
+
+	// enqueue an error
+	mock.enqueue(nil, errors.New("Fake error"))
+	result, err := client.ListDevices("", false, false)
+	assert.NotNil(err)
 
 	// add both devices and enqueue mock output
 	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
 	mock.enqueue(output, nil)
 
 	// blank search should return both devices
-	result, err := client.ListDevices("", false, false)
+	result, err = client.ListDevices("", false, false)
 	assert.Nil(err)
 	assert.Equal([]*devicefarm.Device{androidDevice, iosDevice}, result)
 
@@ -108,9 +113,4 @@ func TestListDevices(t *testing.T) {
 	result, err = client.ListDevices("", false, true)
 	assert.Nil(err)
 	assert.Equal([]*devicefarm.Device{iosDevice}, result)
-
-	// enqueue an error
-	mock.enqueue(nil, errors.New("Fake error"))
-	result, err = client.ListDevices("", false, false)
-	assert.NotNil(err)
 }

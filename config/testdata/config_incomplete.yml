@@ -9,10 +9,8 @@ defaults:
       apk: ./path/to/build.apk
       apk_instrumentation: ./path/to/instrumentation.apk
 
-    devicepools:
-      - a_few_devices
+    devicepool: a_few_devices
 
 branches:
   master:
-    devicepools:
-      - everything
+    devicepool: everything

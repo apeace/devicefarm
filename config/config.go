@@ -52,9 +52,8 @@ Here is an annotated example of what a config file should look like:
 		  apk: ./path/to/build.apk
 		  apk_instrumentation: ./path/to/instrumentation.apk
 
-		# The device pool names that tests should be run on.
-		devicepools:
-		  - a_few_devices
+		# The device pool name that tests should be run on.
+		devicepool: a_few_devices
 
 	# Branches defines overrides for particular branches. For each branch,
 	# it accepts the same properties as `defaults`. Branch configs will be
@@ -66,16 +65,17 @@ Here is an annotated example of what a config file should look like:
 	# unless a full definition is available for that branch.
 	branches:
 	  master:
-		devicepools:
-		  - everything
+		devicepool: everything
 
 */
 package config
 
 import (
+	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"sort"
 )
 
 // An AndroidConfig specifies the location of APKs after running the build steps.
@@ -88,9 +88,9 @@ type AndroidConfig struct {
 // perform the build, the location of Android APKs, and the DevicePool names
 // to run on.
 type BuildManifest struct {
-	Steps           []string      `yaml:"build"`
-	Android         AndroidConfig `yaml:"android"`
-	DevicePoolNames []string      `yaml:"devicepools"`
+	Steps      []string      `yaml:"build"`
+	Android    AndroidConfig `yaml:"android"`
+	DevicePool string        `yaml:"devicepool"`
 }
 
 // MergeManfiests merges together two BuildManifests, giving the second manifest
@@ -113,23 +113,23 @@ func MergeManifests(m1 *BuildManifest, m2 *BuildManifest) *BuildManifest {
 	} else {
 		merged.Android.ApkInstrumentation = m1.Android.ApkInstrumentation
 	}
-	if len(m2.DevicePoolNames) > 0 {
-		merged.DevicePoolNames = m2.DevicePoolNames[:]
+	if len(m2.DevicePool) > 0 {
+		merged.DevicePool = m2.DevicePool[:]
 	} else {
-		merged.DevicePoolNames = m1.DevicePoolNames[:]
+		merged.DevicePool = m1.DevicePool[:]
 	}
 	return merged
 }
 
 // IsRunnable returns true and nil if the BuildManifest is properly configured
 // to run, and returns false and an error otherwise. For example, if a BuildManifest
-// has no DevicePoolNames, it cannot be run.
+// has no DevicePool, it cannot be run.
 func (manifest *BuildManifest) IsRunnable() (bool, error) {
 	if len(manifest.Android.Apk) == 0 || len(manifest.Android.ApkInstrumentation) == 0 {
 		return false, fmt.Errorf("Missing Android apk or apk_instrumentation")
 	}
-	if len(manifest.DevicePoolNames) == 0 {
-		return false, fmt.Errorf("Missing devicepools")
+	if len(manifest.DevicePool) == 0 {
+		return false, fmt.Errorf("Missing devicepool")
 	}
 	return true, nil
 }
@@ -171,17 +171,16 @@ func New(filename string) (*Config, error) {
 //
 // See also BuildManifest#IsRunnable().
 func (config *Config) IsValid() (bool, error) {
-	// TODO: Use regex valid instead?
+	// TODO: Use regex validator instead?
 	if len(config.Arn) == 0 {
 		return false, fmt.Errorf("project_arn is required")
 	}
 	if len(config.DevicePoolDefinitions) == 0 {
 		return false, fmt.Errorf("devicepools must have at least one pool")
 	}
-	for name, devicepool := range config.DevicePoolDefinitions {
-		if len(devicepool) == 0 {
-			return false, fmt.Errorf("devicepool %s has no devices", name)
-		}
+	_, err := config.FlatDevicePoolDefinitions()
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
@@ -195,4 +194,51 @@ func (config *Config) BranchManifest(branch string) *BuildManifest {
 		manifest = MergeManifests(manifest, &branchOverrides)
 	}
 	return manifest
+}
+
+// FlatDevicePoolDefinitions returns a map of device pool definitions with the "+"
+// references flattened, so that each device pool is just a list of device names.
+// It also sorts each list of device names. It detects circular references or
+// non-existant references and returns an error in those cases.
+func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
+	defs := config.DevicePoolDefinitions
+	flat := map[string][]string{}
+	for name, items := range defs {
+		if len(items) == 0 {
+			return nil, errors.New("DevicePool has no items: " + name)
+		}
+		seen := map[string]bool{}
+		deviceNames := []string{}
+		queue := items[:]
+		for {
+			if len(queue) == 0 {
+				break
+			}
+			item := queue[0]
+			queue = queue[1:]
+			if len(item) == 0 {
+				return nil, errors.New("Blank DevicePool item in: " + name)
+			}
+			if item == "+"+name {
+				return nil, errors.New("DevicePool circular dependency: " + name)
+			}
+			if seen[item] {
+				continue
+			}
+			seen[item] = true
+			if string(item[0]) == "+" {
+				poolRef := item[1:]
+				refItems, ok := defs[poolRef]
+				if !ok {
+					return nil, errors.New("DevicePool definition does not exist: " + poolRef)
+				}
+				queue = append(queue, refItems...)
+				continue
+			}
+			deviceNames = append(deviceNames, item)
+		}
+		sort.Strings(deviceNames)
+		flat[name] = deviceNames
+	}
+	return flat, nil
 }
