@@ -222,12 +222,27 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 	return *rApp.Upload.Arn, nil
 }
 
+func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
+	params := &devicefarm.GetUploadInput{Arn: aws.String(arn)}
+	r, err := df.Client.GetUpload(params)
+	if err != nil {
+		return false, err
+	}
+	if *r.Upload.Status == devicefarm.UploadStatusFailed {
+		return false, errors.New("Upload failed: " + arn)
+	}
+	if *r.Upload.Status == devicefarm.UploadStatusSucceeded {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...string) error {
 	errchan := make(chan error, 1)
 	quitchan := make(chan bool, 1)
 	go func() {
-		var r *devicefarm.GetUploadOutput
 		var err error
+		var succeeded bool
 	mainloop:
 		for len(arns) > 0 {
 			select {
@@ -237,16 +252,11 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 			}
 			nextArns := []string{}
 			for _, arn := range arns {
-				params := &devicefarm.GetUploadInput{Arn: aws.String(arn)}
-				r, err = df.Client.GetUpload(params)
+				succeeded, err = df.UploadSucceeded(arn)
 				if err != nil {
 					break mainloop
 				}
-				if *r.Upload.Status == devicefarm.UploadStatusFailed {
-					err = errors.New("Upload failed: " + arn)
-					break mainloop
-				}
-				if *r.Upload.Status == devicefarm.UploadStatusSucceeded {
+				if succeeded {
 					continue
 				}
 				nextArns = append(nextArns, arn)
