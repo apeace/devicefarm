@@ -5,6 +5,8 @@ import (
 	"sort"
 )
 
+// DeviceList is a list of devices.
+// The alias exists just so we can sort these lists by name.
 type DeviceList []*devicefarm.Device
 
 func (list DeviceList) Len() int {
