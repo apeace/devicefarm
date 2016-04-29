@@ -179,7 +179,16 @@ func (client *MockClient) GetUploadRequest(*devicefarm.GetUploadInput) (*request
 }
 
 func (client *MockClient) GetUpload(*devicefarm.GetUploadInput) (*devicefarm.GetUploadOutput, error) {
-	panic("Not implemented")
+	response := client.dequeue()
+	var out *devicefarm.GetUploadOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.GetUploadOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) ListArtifactsRequest(*devicefarm.ListArtifactsInput) (*request.Request, *devicefarm.ListArtifactsOutput) {
