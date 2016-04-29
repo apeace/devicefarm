@@ -1,10 +1,10 @@
 # DeviceFarm
 
-Alpha release: v0.0.1
+Alpha release: v0.0.2
 
 ## Install
 
-[Click here](https://github.com/ride/devicefarm/releases/download/v0.0.1/devicefarm-osx) to download the `devicefarm` binary for OS X. Then complete the install by running:
+[Click here](https://github.com/ride/devicefarm/releases/download/v0.0.2/devicefarm-osx) to download the `devicefarm` binary for OS X. Then complete the install by running:
 
 ```
 mv ~/Downloads/devicefarm-osx /usr/local/bin/devicefarm
