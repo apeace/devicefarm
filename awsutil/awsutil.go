@@ -94,7 +94,7 @@ func (df *DeviceFarm) DevicesLookup() (map[string]*devicefarm.Device, error) {
 	return lookup, nil
 }
 
-func (df *DeviceFarm) ListDevices(search string, androidOnly bool, iosOnly bool) (devices []*devicefarm.Device, err error) {
+func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices []*devicefarm.Device, err error) {
 	allDevices, err := df.ListDevicesCached()
 	if err != nil {
 		return

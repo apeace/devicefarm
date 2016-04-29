@@ -180,7 +180,7 @@ func commandDevices(c *cli.Context) {
 	if androidOnly && iosOnly {
 		log.Fatalln("Cannot use both --android and --ios")
 	}
-	devices, err := client.ListDevices(search, androidOnly, iosOnly)
+	devices, err := client.SearchDevices(search, androidOnly, iosOnly)
 	if err != nil {
 		log.Fatalln(err)
 	}

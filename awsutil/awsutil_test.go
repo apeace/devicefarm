@@ -58,7 +58,7 @@ func TestNewClient(t *testing.T) {
 	assert.NotNil(df)
 }
 
-func TestListDevices(t *testing.T) {
+func TestSearchDevices(t *testing.T) {
 	assert := assert.New(t)
 
 	// fake devices
@@ -78,7 +78,7 @@ func TestListDevices(t *testing.T) {
 
 	// enqueue an error
 	mock.enqueue(nil, errors.New("Fake error"))
-	result, err := client.ListDevices("", false, false)
+	result, err := client.SearchDevices("", false, false)
 	assert.NotNil(err)
 
 	// add both devices and enqueue mock output
@@ -86,7 +86,7 @@ func TestListDevices(t *testing.T) {
 	mock.enqueue(output, nil)
 
 	// blank search should return both devices
-	result, err = client.ListDevices("", false, false)
+	result, err = client.SearchDevices("", false, false)
 	assert.Nil(err)
 	assert.Equal([]*devicefarm.Device{androidDevice, iosDevice}, result)
 
@@ -94,7 +94,7 @@ func TestListDevices(t *testing.T) {
 	mock.enqueue(output, nil)
 
 	// search should only return the iphone
-	result, err = client.ListDevices("iphone", false, false)
+	result, err = client.SearchDevices("iphone", false, false)
 	assert.Nil(err)
 	assert.Equal([]*devicefarm.Device{iosDevice}, result)
 
@@ -102,7 +102,7 @@ func TestListDevices(t *testing.T) {
 	mock.enqueue(output, nil)
 
 	// android filter should only return the android phone
-	result, err = client.ListDevices("", true, false)
+	result, err = client.SearchDevices("", true, false)
 	assert.Nil(err)
 	assert.Equal([]*devicefarm.Device{androidDevice}, result)
 
@@ -110,7 +110,7 @@ func TestListDevices(t *testing.T) {
 	mock.enqueue(output, nil)
 
 	// ios filter should only return the iphone
-	result, err = client.ListDevices("", false, true)
+	result, err = client.SearchDevices("", false, true)
 	assert.Nil(err)
 	assert.Equal([]*devicefarm.Device{iosDevice}, result)
 }
