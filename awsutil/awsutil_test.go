@@ -67,7 +67,7 @@ func TestSearchDevices(t *testing.T) {
 		Platform: aws.String(devicefarm.DevicePlatformAndroid),
 	}
 	iosDevice := &devicefarm.Device{
-		Name:     aws.String("iPhone 6S"),
+		Name:     aws.String("Apple iPhone 6S"),
 		Platform: aws.String(devicefarm.DevicePlatformIos),
 	}
 
@@ -85,10 +85,10 @@ func TestSearchDevices(t *testing.T) {
 	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
 	mock.enqueue(output, nil)
 
-	// blank search should return both devices
+	// blank search should return both devices, sorted
 	result, err = client.SearchDevices("", false, false)
 	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{androidDevice, iosDevice}, result)
+	assert.Equal(DeviceList{iosDevice, androidDevice}, result)
 
 	// re-enqueue same response
 	mock.enqueue(output, nil)
@@ -96,7 +96,7 @@ func TestSearchDevices(t *testing.T) {
 	// search should only return the iphone
 	result, err = client.SearchDevices("iphone", false, false)
 	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{iosDevice}, result)
+	assert.Equal(DeviceList{iosDevice}, result)
 
 	// re-enqueue same response
 	mock.enqueue(output, nil)
@@ -104,7 +104,7 @@ func TestSearchDevices(t *testing.T) {
 	// android filter should only return the android phone
 	result, err = client.SearchDevices("", true, false)
 	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{androidDevice}, result)
+	assert.Equal(DeviceList{androidDevice}, result)
 
 	// re-enqueue same response
 	mock.enqueue(output, nil)
@@ -112,5 +112,5 @@ func TestSearchDevices(t *testing.T) {
 	// ios filter should only return the iphone
 	result, err = client.SearchDevices("", false, true)
 	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{iosDevice}, result)
+	assert.Equal(DeviceList{iosDevice}, result)
 }

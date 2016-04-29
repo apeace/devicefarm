@@ -56,7 +56,7 @@ func CredsFromFile(filename string) (ok bool, creds *credentials.Credentials) {
 
 type DeviceFarm struct {
 	Client          devicefarmiface.DeviceFarmAPI
-	allDevicesCache []*devicefarm.Device
+	allDevicesCache DeviceList
 }
 
 func NewClient(creds *credentials.Credentials) *DeviceFarm {
@@ -68,7 +68,7 @@ func NewClient(creds *credentials.Credentials) *DeviceFarm {
 	return &DeviceFarm{client, nil}
 }
 
-func (df *DeviceFarm) ListDevicesCached() ([]*devicefarm.Device, error) {
+func (df *DeviceFarm) ListDevicesCached() (DeviceList, error) {
 	if df.allDevicesCache != nil {
 		return df.allDevicesCache, nil
 	}
@@ -77,7 +77,9 @@ func (df *DeviceFarm) ListDevicesCached() ([]*devicefarm.Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	df.allDevicesCache = r.Devices
+	list := DeviceList(r.Devices)
+	list.Sort()
+	df.allDevicesCache = list
 	return df.allDevicesCache, nil
 }
 
@@ -94,12 +96,12 @@ func (df *DeviceFarm) DevicesLookup() (map[string]*devicefarm.Device, error) {
 	return lookup, nil
 }
 
-func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices []*devicefarm.Device, err error) {
+func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices DeviceList, err error) {
 	allDevices, err := df.ListDevicesCached()
 	if err != nil {
 		return
 	}
-	devices = []*devicefarm.Device{}
+	devices = DeviceList{}
 	search = strings.ToLower(search)
 	doSearch := len(search) > 0
 	for _, device := range allDevices {
