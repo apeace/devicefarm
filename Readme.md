@@ -28,7 +28,7 @@ You will need [access to AWS](https://github.com/ride/devops/blob/master/docs/aw
 # go into your android project
 $ cd /path/to/ride-app-android/
 
-# run tests. after about 90 seconds, you will get a URL
+# run tests. after a couple of minutes, you will get a URL
 $ devicefarm run
 2016/04/29 09:13:54 >> Dir: .
 2016/04/29 09:13:54 >> Config: devicefarm.yml
