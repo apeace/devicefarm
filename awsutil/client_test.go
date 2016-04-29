@@ -20,7 +20,7 @@ var iosDevice *devicefarm.Device = &devicefarm.Device{
 	Arn:      aws.String("arn456"),
 }
 
-func mockClient(t *testing.T) *DeviceFarm {
+func mockClient(t *testing.T) (*DeviceFarm, *MockClient) {
 	// mock client and ListDevicesOutput
 	mock := &MockClient{}
 	client := &DeviceFarm{mock, nil, false}
@@ -34,7 +34,7 @@ func mockClient(t *testing.T) *DeviceFarm {
 	err := client.Init()
 	assert.Nil(t, err)
 
-	return client
+	return client, mock
 }
 
 func TestInit(t *testing.T) {
@@ -48,7 +48,7 @@ func TestInit(t *testing.T) {
 	assert.NotNil(err)
 
 	// test success case
-	client = mockClient(t)
+	client, _ = mockClient(t)
 
 	// init should succeed another time
 	err = client.Init()
@@ -57,7 +57,7 @@ func TestInit(t *testing.T) {
 
 func TestDevicesLookup(t *testing.T) {
 	assert := assert.New(t)
-	client := mockClient(t)
+	client, _ := mockClient(t)
 	lookup := client.DevicesLookup()
 	assert.Equal(len(lookup), 4)
 	assert.Equal(lookup["Samsung Galaxy S3"], androidDevice)
@@ -68,7 +68,7 @@ func TestDevicesLookup(t *testing.T) {
 
 func TestSearchDevices(t *testing.T) {
 	assert := assert.New(t)
-	client := mockClient(t)
+	client, _ := mockClient(t)
 
 	// blank search should return both devices, sorted
 	result := client.SearchDevices("", false, false)
@@ -85,4 +85,66 @@ func TestSearchDevices(t *testing.T) {
 	// ios filter should only return the iphone
 	result = client.SearchDevices("", false, true)
 	assert.Equal(DeviceList{iosDevice}, result)
+}
+
+func TestWaitForUploadsToSucceed(t *testing.T) {
+	assert := assert.New(t)
+	client, mock := mockClient(t)
+
+	// should succeed immediately
+	output := &devicefarm.GetUploadOutput{
+		Upload: &devicefarm.Upload{
+			Arn:    aws.String("arn123"),
+			Status: aws.String(devicefarm.UploadStatusSucceeded),
+		},
+	}
+	mock.enqueue(output, nil)
+	err := client.WaitForUploadsToSucceed(1000, 0, "arn123")
+	assert.Nil(err)
+
+	// should succeed on the third iteration
+	output = &devicefarm.GetUploadOutput{
+		Upload: &devicefarm.Upload{
+			Arn:    aws.String("arn123"),
+			Status: aws.String(devicefarm.UploadStatusInitialized),
+		},
+	}
+	mock.enqueue(output, nil)
+	mock.enqueue(output, nil)
+	output = &devicefarm.GetUploadOutput{
+		Upload: &devicefarm.Upload{
+			Arn:    aws.String("arn123"),
+			Status: aws.String(devicefarm.UploadStatusSucceeded),
+		},
+	}
+	mock.enqueue(output, nil)
+	err = client.WaitForUploadsToSucceed(1000, 0, "arn123")
+	assert.Nil(err)
+
+	// should fail because upload failed
+	output = &devicefarm.GetUploadOutput{
+		Upload: &devicefarm.Upload{
+			Arn:    aws.String("arn123"),
+			Status: aws.String(devicefarm.UploadStatusFailed),
+		},
+	}
+	mock.enqueue(output, nil)
+	err = client.WaitForUploadsToSucceed(1000, 0, "arn123")
+	assert.NotNil(err)
+
+	// should fail because of request error
+	mock.enqueue(nil, errors.New("Fake error"))
+	err = client.WaitForUploadsToSucceed(1000, 0, "arn123")
+	assert.NotNil(err)
+
+	// should fail because of timeout
+	output = &devicefarm.GetUploadOutput{
+		Upload: &devicefarm.Upload{
+			Arn:    aws.String("arn123"),
+			Status: aws.String(devicefarm.UploadStatusInitialized),
+		},
+	}
+	mock.enqueue(output, nil)
+	err = client.WaitForUploadsToSucceed(1, 1000, "arn123")
+	assert.NotNil(err)
 }

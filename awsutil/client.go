@@ -222,6 +222,44 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 	return *rApp.Upload.Arn, nil
 }
 
+func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...string) error {
+	errchan := make(chan error, 1)
+	go func() {
+		var r *devicefarm.GetUploadOutput
+		var err error
+	mainloop:
+		for len(arns) > 0 {
+			nextArns := []string{}
+			for _, arn := range arns {
+				params := &devicefarm.GetUploadInput{Arn: aws.String(arn)}
+				r, err = df.Client.GetUpload(params)
+				if err != nil {
+					break mainloop
+				}
+				if *r.Upload.Status == devicefarm.UploadStatusFailed {
+					err = errors.New("Upload failed: " + arn)
+					break mainloop
+				}
+				if *r.Upload.Status == devicefarm.UploadStatusSucceeded {
+					continue
+				}
+				nextArns = append(nextArns, arn)
+			}
+			arns = nextArns
+			if len(arns) > 0 && delayMs > 0 {
+				time.Sleep(time.Duration(delayMs) * time.Millisecond)
+			}
+		}
+		errchan <- err
+	}()
+	select {
+	case <-time.After(time.Duration(timeoutMs) * time.Millisecond):
+		return errors.New("Timed out")
+	case err := <-errchan:
+		return err
+	}
+}
+
 func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation string) (string, error) {
 	log.Println(">> Uploading files...")
 	log.Println(apk)
@@ -234,8 +272,13 @@ func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation str
 	if err != nil {
 		return "", err
 	}
+
 	log.Println(">> Waiting for files to be processed...")
-	time.Sleep(60 * time.Second)
+	err = df.WaitForUploadsToSucceed(60000, 5000, appArn, instArn)
+	if err != nil {
+		return "", err
+	}
+
 	log.Println(">> Creating test run...")
 	params := &devicefarm.ScheduleRunInput{
 		DevicePoolArn: aws.String(poolArn),
