@@ -1,10 +1,7 @@
 package awsutil
 
 import (
-	"errors"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -49,68 +46,4 @@ func TestCredsFromFile(t *testing.T) {
 	ok, creds := CredsFromFile("./testdata/creds.json")
 	assert.True(ok)
 	assert.Equal(*credentials.NewStaticCredentials("access-key", "secret", ""), *creds)
-}
-
-func TestNewClient(t *testing.T) {
-	assert := assert.New(t)
-	creds := credentials.NewStaticCredentials("access-key", "secret", "")
-	df := NewClient(creds)
-	assert.NotNil(df)
-}
-
-func TestListDevices(t *testing.T) {
-	assert := assert.New(t)
-
-	// fake devices
-	androidDevice := &devicefarm.Device{
-		Name:     aws.String("Samsung Galaxy S3"),
-		Platform: aws.String(devicefarm.DevicePlatformAndroid),
-	}
-	iosDevice := &devicefarm.Device{
-		Name:     aws.String("iPhone 6S"),
-		Platform: aws.String(devicefarm.DevicePlatformIos),
-	}
-
-	// mock client and ListDevicesOutput
-	mock := &MockClient{}
-	client := &DeviceFarm{mock, nil}
-	output := &devicefarm.ListDevicesOutput{}
-
-	// enqueue an error
-	mock.enqueue(nil, errors.New("Fake error"))
-	result, err := client.ListDevices("", false, false)
-	assert.NotNil(err)
-
-	// add both devices and enqueue mock output
-	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
-	mock.enqueue(output, nil)
-
-	// blank search should return both devices
-	result, err = client.ListDevices("", false, false)
-	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{androidDevice, iosDevice}, result)
-
-	// re-enqueue same response
-	mock.enqueue(output, nil)
-
-	// search should only return the iphone
-	result, err = client.ListDevices("iphone", false, false)
-	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{iosDevice}, result)
-
-	// re-enqueue same response
-	mock.enqueue(output, nil)
-
-	// android filter should only return the android phone
-	result, err = client.ListDevices("", true, false)
-	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{androidDevice}, result)
-
-	// re-enqueue same response
-	mock.enqueue(output, nil)
-
-	// ios filter should only return the iphone
-	result, err = client.ListDevices("", false, true)
-	assert.Nil(err)
-	assert.Equal([]*devicefarm.Device{iosDevice}, result)
 }

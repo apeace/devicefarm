@@ -180,10 +180,7 @@ func commandDevices(c *cli.Context) {
 	if androidOnly && iosOnly {
 		log.Fatalln("Cannot use both --android and --ios")
 	}
-	devices, err := client.ListDevices(search, androidOnly, iosOnly)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	devices := client.SearchDevices(search, androidOnly, iosOnly)
 	for _, device := range devices {
 		fmt.Println(*device.Name)
 	}
@@ -202,7 +199,11 @@ func findCreds() *credentials.Credentials {
 
 func getClient() *awsutil.DeviceFarm {
 	creds := findCreds()
-	return awsutil.NewClient(creds)
+	client, err := awsutil.NewClient(creds)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return client
 }
 
 var cachedBuild *build.Build
