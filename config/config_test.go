@@ -10,20 +10,20 @@ func TestMergeManifests(t *testing.T) {
 
 	// a complete manifest
 	m1 := BuildManifest{
-		Steps:            BuildSteps{"foo", "bar"},
-		Android:          AndroidConfig{"foo", "bar"},
-		DeviceGroupNames: []string{"foo", "bar"},
+		Steps:      []string{"foo", "bar"},
+		Android:    AndroidConfig{"foo", "bar"},
+		DevicePool: "foo",
 	}
 
 	// m2 should override only Steps
 	m2 := BuildManifest{
-		Steps: BuildSteps{"bar", "foo"},
+		Steps: []string{"bar", "foo"},
 	}
 	merged := MergeManifests(&m1, &m2)
 	assert.Equal(BuildManifest{
-		Steps:            BuildSteps{"bar", "foo"},
-		Android:          AndroidConfig{"foo", "bar"},
-		DeviceGroupNames: []string{"foo", "bar"},
+		Steps:      []string{"bar", "foo"},
+		Android:    AndroidConfig{"foo", "bar"},
+		DevicePool: "foo",
 	}, *merged)
 	// m1 should override everything in m2
 	merged = MergeManifests(&m2, &m1)
@@ -35,23 +35,23 @@ func TestMergeManifests(t *testing.T) {
 	}
 	merged = MergeManifests(&m1, &m3)
 	assert.Equal(BuildManifest{
-		Steps:            BuildSteps{"foo", "bar"},
-		Android:          AndroidConfig{"bar", "bar"},
-		DeviceGroupNames: []string{"foo", "bar"},
+		Steps:      []string{"foo", "bar"},
+		Android:    AndroidConfig{"bar", "bar"},
+		DevicePool: "foo",
 	}, *merged)
 	// m1 should override everything in m3
 	merged = MergeManifests(&m3, &m1)
 	assert.Equal(m1, *merged)
 
-	// m4 should override only DeviceGroupNames
+	// m4 should override only DevicePool
 	m4 := BuildManifest{
-		DeviceGroupNames: []string{"bar", "foo"},
+		DevicePool: "bar",
 	}
 	merged = MergeManifests(&m1, &m4)
 	assert.Equal(BuildManifest{
-		Steps:            BuildSteps{"foo", "bar"},
-		Android:          AndroidConfig{"foo", "bar"},
-		DeviceGroupNames: []string{"bar", "foo"},
+		Steps:      []string{"foo", "bar"},
+		Android:    AndroidConfig{"foo", "bar"},
+		DevicePool: "bar",
 	}, *merged)
 	// m1 should override everything in m4
 	merged = MergeManifests(&m4, &m1)
@@ -63,9 +63,9 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 
 	// a complete manifest
 	m1 := BuildManifest{
-		Steps:            BuildSteps{"foo", "bar"},
-		Android:          AndroidConfig{"foo", "bar"},
-		DeviceGroupNames: []string{"foo", "bar"},
+		Steps:      []string{"foo", "bar"},
+		Android:    AndroidConfig{"foo", "bar"},
+		DevicePool: "foo",
 	}
 	runnable, err := m1.IsRunnable()
 	assert.True(runnable)
@@ -73,19 +73,19 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 
 	// missing Android.Apk
 	m2 := BuildManifest{
-		Steps:            BuildSteps{"foo", "bar"},
-		Android:          AndroidConfig{ApkInstrumentation: "bar"},
-		DeviceGroupNames: []string{"foo", "bar"},
+		Steps:      []string{"foo", "bar"},
+		Android:    AndroidConfig{ApkInstrumentation: "bar"},
+		DevicePool: "foo",
 	}
 	runnable, err = m2.IsRunnable()
 	assert.False(runnable)
 	assert.NotNil(err)
 
-	// missing a device group
+	// missing a device pool
 	m3 := BuildManifest{
-		Steps:            BuildSteps{"foo", "bar"},
-		Android:          AndroidConfig{"foo", "bar"},
-		DeviceGroupNames: []string{},
+		Steps:      []string{"foo", "bar"},
+		Android:    AndroidConfig{"foo", "bar"},
+		DevicePool: "",
 	}
 	runnable, err = m3.IsRunnable()
 	assert.False(runnable)
@@ -100,26 +100,27 @@ func TestNew(t *testing.T) {
 	assert.Nil(err)
 
 	// build the expected config
-	deviceGroupDefs := map[string]DeviceGroup{
+	devicePoolDefs := map[string][]string{
 		"a_few_devices": {"Samsung S3", "Blah fone"},
 		"samsung_s4_s5": {"Samsung S4 TMobile", "Samsung S4 AT&T", "Samsung S5 TMobile", "Samsung S5 AT&T"},
 		"everything":    {"+a_few_devices", "+samsung_s4_s5"},
 	}
 	defaultBuild := BuildManifest{
-		Steps: BuildSteps{"echo \"Foo\"", "echo \"Bar\""},
+		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
 		Android: AndroidConfig{
 			Apk:                "./path/to/build.apk",
 			ApkInstrumentation: "./path/to/instrumentation.apk",
 		},
-		DeviceGroupNames: nil,
+		DevicePool: "",
 	}
 	masterBuild := BuildManifest{
-		DeviceGroupNames: []string{"everything"},
+		DevicePool: "everything",
 	}
 	expected := Config{
-		DeviceGroupDefinitions: deviceGroupDefs,
-		Defaults:               defaultBuild,
-		Branches:               map[string]BuildManifest{"master": masterBuild},
+		Arn: "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0",
+		DevicePoolDefinitions: devicePoolDefs,
+		Defaults:              defaultBuild,
+		Branches:              map[string]BuildManifest{"master": masterBuild},
 	}
 
 	// config from the file should match the expected config
@@ -144,7 +145,7 @@ func TestNewInvalid(t *testing.T) {
 	assert.NotNil(err)
 	assert.Nil(config)
 
-	// missing devicegroups
+	// missing devicepools
 	config, err = New("testdata/config_incomplete.yml")
 	assert.NotNil(err)
 	assert.Nil(config)
@@ -154,20 +155,32 @@ func TestConfigIsValid(t *testing.T) {
 	assert := assert.New(t)
 
 	// a valid config
-	c1 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{"bar"}}}
+	c1 := Config{Arn: "foo", DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
 	ok, err := c1.IsValid()
 	assert.True(ok)
 	assert.Nil(err)
 
-	// invalid due to empty device group def
-	c2 := Config{DeviceGroupDefinitions: map[string]DeviceGroup{"foo": []Device{}}}
+	// invalid due to blank device pool item
+	c2 := Config{Arn: "foo", DevicePoolDefinitions: map[string][]string{"foo": {""}}}
 	ok, err = c2.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
 
-	// invalid due to no device group defs
-	c3 := Config{}
+	// invalid due to no device pool defs
+	c3 := Config{Arn: "foo"}
 	ok, err = c3.IsValid()
+	assert.False(ok)
+	assert.NotNil(err)
+
+	// invalid due to missing Arn
+	c4 := Config{DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
+	ok, err = c4.IsValid()
+	assert.False(ok)
+	assert.NotNil(err)
+
+	// invalid due to empty device pool def
+	c5 := Config{Arn: "foo", DevicePoolDefinitions: map[string][]string{"foo": {}}}
+	ok, err = c5.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
 }
@@ -180,12 +193,47 @@ func TestConfigBranchManifest(t *testing.T) {
 
 	// build the expected manifest
 	masterManifest := BuildManifest{
-		Steps: BuildSteps{"echo \"Foo\"", "echo \"Bar\""},
+		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
 		Android: AndroidConfig{
 			Apk:                "./path/to/build.apk",
 			ApkInstrumentation: "./path/to/instrumentation.apk",
 		},
-		DeviceGroupNames: []string{"everything"},
+		DevicePool: "everything",
 	}
 	assert.Equal(masterManifest, *config.BranchManifest("master"))
+}
+
+func TestFlatDevicePoolDefinitions(t *testing.T) {
+	assert := assert.New(t)
+
+	// should successfully get flattened result
+	defs := map[string][]string{
+		"pool1": {"foo", "bar"},
+		"pool2": {"bar", "+pool1"},
+	}
+	config := Config{DevicePoolDefinitions: defs}
+	flat, err := config.FlatDevicePoolDefinitions()
+	assert.Nil(err)
+	assert.Equal(map[string][]string{
+		"pool1": {"bar", "foo"},
+		"pool2": {"bar", "foo"},
+	}, flat)
+
+	// should fail because of circular dependency
+	defs = map[string][]string{
+		"pool1": {"foo", "bar", "+pool2"},
+		"pool2": {"bar", "+pool1"},
+	}
+	config = Config{DevicePoolDefinitions: defs}
+	flat, err = config.FlatDevicePoolDefinitions()
+	assert.NotNil(err)
+
+	// should fail because "pool3" does not exist
+	defs = map[string][]string{
+		"pool1": {"foo", "bar", "+pool3"},
+		"pool2": {"bar", "+pool1"},
+	}
+	config = Config{DevicePoolDefinitions: defs}
+	flat, err = config.FlatDevicePoolDefinitions()
+	assert.NotNil(err)
 }

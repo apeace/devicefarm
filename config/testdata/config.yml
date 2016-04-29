@@ -1,4 +1,6 @@
-devicegroups:
+project_arn: arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0
+
+devicepool_definitions:
   a_few_devices:
     - Samsung S3
     - Blah fone
@@ -24,5 +26,4 @@ defaults:
 
 branches:
   master:
-    devicegroups:
-      - everything
+    devicepool: everything

@@ -1,4 +1,4 @@
-# this config is missing devicegroups
+# this config is missing devicepool_definitions
 
 defaults:
     build:
@@ -9,10 +9,8 @@ defaults:
       apk: ./path/to/build.apk
       apk_instrumentation: ./path/to/instrumentation.apk
 
-    devicegroups:
-      - a_few_devices
+    devicepool: a_few_devices
 
 branches:
   master:
-    devicegroups:
-      - everything
+    devicepool: everything
