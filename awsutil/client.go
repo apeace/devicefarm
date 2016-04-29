@@ -224,11 +224,17 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 
 func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...string) error {
 	errchan := make(chan error, 1)
+	quitchan := make(chan bool, 1)
 	go func() {
 		var r *devicefarm.GetUploadOutput
 		var err error
 	mainloop:
 		for len(arns) > 0 {
+			select {
+			case <-quitchan:
+				break mainloop
+			default:
+			}
 			nextArns := []string{}
 			for _, arn := range arns {
 				params := &devicefarm.GetUploadInput{Arn: aws.String(arn)}
@@ -254,6 +260,7 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 	}()
 	select {
 	case <-time.After(time.Duration(timeoutMs) * time.Millisecond):
+		quitchan <- true
 		return errors.New("Timed out")
 	case err := <-errchan:
 		return err

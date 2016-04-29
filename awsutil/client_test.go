@@ -145,6 +145,6 @@ func TestWaitForUploadsToSucceed(t *testing.T) {
 		},
 	}
 	mock.enqueue(output, nil)
-	err = client.WaitForUploadsToSucceed(1, 1000, "arn123")
+	err = client.WaitForUploadsToSucceed(1, 2, "arn123")
 	assert.NotNil(err)
 }
