@@ -19,50 +19,48 @@ import (
 type DeviceFarm struct {
 	Client          devicefarmiface.DeviceFarmAPI
 	allDevicesCache DeviceList
+	initialized     bool
 }
 
-func NewClient(creds *credentials.Credentials) *DeviceFarm {
+func NewClient(creds *credentials.Credentials) (df *DeviceFarm, err error) {
 	sess := session.New(&aws.Config{
 		Region:      aws.String("us-west-2"),
 		Credentials: creds,
 	})
 	client := devicefarm.New(sess)
-	return &DeviceFarm{client, nil}
+	df = &DeviceFarm{client, nil, false}
+	err = df.Init()
+	return
 }
 
-func (df *DeviceFarm) ListDevicesCached() (DeviceList, error) {
-	if df.allDevicesCache != nil {
-		return df.allDevicesCache, nil
+func (df *DeviceFarm) Init() (err error) {
+	if df.initialized {
+		return
 	}
 	params := &devicefarm.ListDevicesInput{}
 	r, err := df.Client.ListDevices(params)
 	if err != nil {
-		return nil, err
+		return
 	}
 	list := DeviceList(r.Devices)
 	list.Sort()
 	df.allDevicesCache = list
-	return df.allDevicesCache, nil
+	df.initialized = true
+	return
 }
 
-func (df *DeviceFarm) DevicesLookup() (map[string]*devicefarm.Device, error) {
-	allDevices, err := df.ListDevicesCached()
-	if err != nil {
-		return nil, err
-	}
+func (df *DeviceFarm) DevicesLookup() map[string]*devicefarm.Device {
+	allDevices := df.allDevicesCache
 	lookup := map[string]*devicefarm.Device{}
 	for _, device := range allDevices {
 		lookup[*device.Name] = device
 		lookup[*device.Arn] = device
 	}
-	return lookup, nil
+	return lookup
 }
 
-func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices DeviceList, err error) {
-	allDevices, err := df.ListDevicesCached()
-	if err != nil {
-		return
-	}
+func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices DeviceList) {
+	allDevices := df.allDevicesCache
 	devices = DeviceList{}
 	search = strings.ToLower(search)
 	doSearch := len(search) > 0
@@ -92,10 +90,7 @@ func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, err
 }
 
 func (df *DeviceFarm) NamesToArns(names []string) ([]string, error) {
-	lookup, err := df.DevicesLookup()
-	if err != nil {
-		return nil, err
-	}
+	lookup := df.DevicesLookup()
 	arns := []string{}
 	for _, name := range names {
 		device, ok := lookup[name]
