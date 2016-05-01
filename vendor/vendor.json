@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "htjvdG/znrHmFYRQBqA2vHrJsF4=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "cd7d1bbe41066b6c1f19780f895901052150a575",
+			"revisionTime": "2016-04-25T09:32:37Z"
+		},
+		{
 			"checksumSHA1": "ywdHZgNlu+/+IjY7JDBxVuBD9gk=",
 			"path": "github.com/aws/aws-sdk-go/aws",
 			"revision": "d6f37f6686a9207f3688d440733c4d20301273db",
