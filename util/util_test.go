@@ -57,13 +57,16 @@ func TestRunAll(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.RemoveAll(tmpDir)
-	outputs := RunAll(tmpDir,
+	out, log := NewCaptureLogger()
+	outputs, err := RunAllLog(log, tmpDir,
 		"echo Foo",
 		"exit 1",
 		"echo Bar")
+	assert.NotNil(err)
 	assert.Equal(2, len(outputs))
 	assert.Equal(CmdOutput{"echo Foo", "Foo", nil}, *outputs[0])
 	assert.NotNil(outputs[1].Err)
+	assert.Equal([]string{"$ echo Foo\n", "$ exit 1\n"}, out.Out())
 }
 
 func TestCopyFile(t *testing.T) {

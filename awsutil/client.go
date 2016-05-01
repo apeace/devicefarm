@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/aws/aws-sdk-go/service/devicefarm/devicefarmiface"
-	"log"
+	"github.com/ride/devicefarm/util"
 	"net/http"
 	"os"
 	"strings"
@@ -18,17 +18,18 @@ import (
 
 type DeviceFarm struct {
 	Client          devicefarmiface.DeviceFarmAPI
+	Log             util.Logger
 	allDevicesCache DeviceList
 	initialized     bool
 }
 
-func NewClient(creds *credentials.Credentials) (df *DeviceFarm, err error) {
+func NewClient(creds *credentials.Credentials, log util.Logger) (df *DeviceFarm, err error) {
 	sess := session.New(&aws.Config{
 		Region:      aws.String("us-west-2"),
 		Credentials: creds,
 	})
 	client := devicefarm.New(sess)
-	df = &DeviceFarm{client, nil, false}
+	df = &DeviceFarm{client, log, nil, false}
 	err = df.Init()
 	return
 }
@@ -278,6 +279,7 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 }
 
 func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation string) (string, error) {
+	log := df.Log
 	log.Println(">> Uploading files...")
 	log.Println(apk)
 	appArn, err := df.CreateUpload(projectArn, apk, "ANDROID_APP", "app.apk")

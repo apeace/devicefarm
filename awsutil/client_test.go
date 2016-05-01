@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/devicefarm"
+	"github.com/ride/devicefarm/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -23,7 +24,7 @@ var iosDevice *devicefarm.Device = &devicefarm.Device{
 func mockClient(t *testing.T) (*DeviceFarm, *MockClient) {
 	// mock client and ListDevicesOutput
 	mock := &MockClient{}
-	client := &DeviceFarm{mock, nil, false}
+	client := &DeviceFarm{mock, util.NilLogger, nil, false}
 	output := &devicefarm.ListDevicesOutput{}
 
 	// add both devices and enqueue mock output
@@ -42,7 +43,7 @@ func TestInit(t *testing.T) {
 
 	// test error case
 	mock := &MockClient{}
-	client := &DeviceFarm{mock, nil, false}
+	client := &DeviceFarm{mock, util.NilLogger, nil, false}
 	mock.enqueue(nil, errors.New("Fake error"))
 	err := client.Init()
 	assert.NotNil(err)

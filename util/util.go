@@ -6,7 +6,6 @@ package util
 import (
 	"errors"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -47,20 +46,28 @@ type CmdOutput struct {
 
 // RunAll runs all the given commands in the given directory, and
 // returns a list of CmdOutputs.
-func RunAll(dir string, commands ...string) []*CmdOutput {
+func RunAllLog(log Logger, dir string, commands ...string) ([]*CmdOutput, error) {
 	outputs := make([]*CmdOutput, len(commands))
 	var i int
 	var command string
+	var bytes []byte
+	var err error
 	for i, command = range commands {
 		command = strings.TrimSpace(command)
 		log.Println("$ " + command)
-		out, err := Cmd(dir, command).Output()
-		outputs[i] = &CmdOutput{command, strings.TrimSpace(string(out)), err}
+		bytes, err = Cmd(dir, command).Output()
+		out := string(bytes)
+		log.Debugln(out)
+		outputs[i] = &CmdOutput{command, strings.TrimSpace(out), err}
 		if err != nil {
 			break
 		}
 	}
-	return outputs[0 : i+1]
+	return outputs[0 : i+1], err
+}
+
+func RunAll(dir string, commands ...string) ([]*CmdOutput, error) {
+	return RunAllLog(NilLogger, dir, commands...)
 }
 
 // CopyFile copies the contents of one file to another file. If the
