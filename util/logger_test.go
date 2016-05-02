@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"os"
 )
 
 func TestCaptureLogger(t *testing.T) {
@@ -36,4 +37,25 @@ func TestStandardLogger(t *testing.T) {
 	for _, f := range []func(){println, printf, print} {
 		assert.Panics(f)
 	}
+}
+
+func ExampleCaptureWriter() {
+	w := &CaptureWriter{}
+	w.Write([]byte("foo"))
+	w.Write([]byte("bar"))
+	w.Out() // []string{"foo", "bar"}
+}
+
+func ExampleNewCaptureLogger() {
+	w, log := NewCaptureLogger()
+	log.Println("foo") // nothing written to stdout
+	log.Debugln("bar") // "bar" is written to stderr
+	log.Println("baz") // nothing written to stdout
+	w.Out() // []string{"foo", "baz"}
+}
+
+func ExampleNewStandardLogger() {
+	log := NewStandardLogger(os.Stdout, os.Stderr)
+	log.Println("foo") // unformatted log to stdout
+	log.Debugln("bar") // logrus formatted log to stderr
 }

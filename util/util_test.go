@@ -39,7 +39,7 @@ func TestGitBranch(t *testing.T) {
 		"git commit bar -m bar",
 		"git checkout HEAD^")
 	branch, err = GitBranch(tmpDir)
-	assert.Equal(ErrDetached, err)
+	assert.Equal(ErrGitDetached, err)
 }
 
 func TestCmd(t *testing.T) {
