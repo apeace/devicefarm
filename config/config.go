@@ -75,8 +75,8 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"sort"
 	"regexp"
+	"sort"
 )
 
 // ArnRegexp matches an AWS ARN with the following capture groups:
@@ -91,9 +91,6 @@ import (
 // http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genref-arns
 var ArnRegexp *regexp.Regexp = regexp.MustCompile("arn:([^:]+):([^:]+):([^:]+):([^:]*):(.*)")
 
-// ErrInvalidArn is returned for invalid ARNs.
-var ErrInvalidArn error = errors.New("Invalid ARN")
-
 // An AndroidConfig specifies the location of APKs after running the build steps.
 type AndroidConfig struct {
 	Apk                string `yaml:"apk"`
@@ -103,10 +100,10 @@ type AndroidConfig struct {
 // An Arn specifies the pieces of an AWS ARN
 type Arn struct {
 	Partition string
-	Service string
-	Region string
+	Service   string
+	Region    string
 	AccountId string
-	Resource string
+	Resource  string
 }
 
 // NewArn parses an ARN string and returns an Arn struct.
@@ -114,15 +111,15 @@ type Arn struct {
 func NewArn(arn string) (*Arn, error) {
 	match := ArnRegexp.FindStringSubmatch(arn)
 	if len(match) != 6 {
-		return nil, ErrInvalidArn
+		return nil, errors.New("Invalid ARN: " + arn)
 	}
 	return &Arn{
 		Partition: match[1],
-		Service: match[2],
-		Region: match[3],
+		Service:   match[2],
+		Region:    match[3],
 		AccountId: match[4],
-		Resource: match[5],
-	},  nil
+		Resource:  match[5],
+	}, nil
 }
 
 // A BuildManifest specifies the whole configuration for a build: the steps to

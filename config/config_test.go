@@ -13,15 +13,15 @@ func TestNewArn(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal(Arn{
 		Partition: "aws",
-		Service: "devicefarm",
-		Region: "us-west-2",
+		Service:   "devicefarm",
+		Region:    "us-west-2",
 		AccountId: "",
-		Resource: "device:5F9CEB47606A4709879003E11BEAFB08",
+		Resource:  "device:5F9CEB47606A4709879003E11BEAFB08",
 	}, *arn)
 
 	arn, err = NewArn("foo")
 	assert.Nil(arn)
-	assert.Equal(err, ErrInvalidArn)
+	assert.NotNil(err)
 }
 
 func TestMergeManifests(t *testing.T) {
@@ -148,7 +148,6 @@ func TestNew(t *testing.T) {
 
 func TestNewInvalid(t *testing.T) {
 	assert := assert.New(t)
-
 
 	// invalid because it is not valid YAML
 	config, err := New("testdata/config_invalid.yml")
