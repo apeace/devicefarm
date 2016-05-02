@@ -120,13 +120,13 @@ GLOBAL OPTIONS:
 
 This is an alpha release for testing. Work is ongoing to stabilize this feature set for version 1.0.
 
-See our [issue tracker](https://github.com/ride/devicefarm/issues) for known bugs.
+See our [issue tracker](https://github.com/ride/devicefarm/issues) for known bugs, improvements, and maintenance work.
 
 Right now only Android instrumentation tests are supported, and only command-line usage is supported.
 
 Future work:
 
- * v1.0 - Stabilize the existing feature set, higher level of unit-test coverage, automated releases (continuous delivery through CI).
+ * [v1.0](https://github.com/ride/devicefarm/milestones/v1.0.0) - Stabilize the existing feature set, higher level of unit-test coverage, automated releases (continuous delivery through CI).
  * v1.1 - Update to latest version with `devicefarm update`.
  * v1.x - Integrate with Github.
  * v2.0 - Rework `devicefarm.yml` format, introduce support for iOS and additional test types.
