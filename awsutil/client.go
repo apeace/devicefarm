@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/aws/aws-sdk-go/service/devicefarm/devicefarmiface"
-	"log"
+	"github.com/ride/devicefarm/util"
 	"net/http"
 	"os"
 	"strings"
@@ -18,17 +18,18 @@ import (
 
 type DeviceFarm struct {
 	Client          devicefarmiface.DeviceFarmAPI
+	Log             util.Logger
 	allDevicesCache DeviceList
 	initialized     bool
 }
 
-func NewClient(creds *credentials.Credentials) (df *DeviceFarm, err error) {
+func NewClient(creds *credentials.Credentials, log util.Logger) (df *DeviceFarm, err error) {
 	sess := session.New(&aws.Config{
 		Region:      aws.String("us-west-2"),
 		Credentials: creds,
 	})
 	client := devicefarm.New(sess)
-	df = &DeviceFarm{client, nil, false}
+	df = &DeviceFarm{client, log, nil, false}
 	err = df.Init()
 	return
 }
@@ -222,25 +223,41 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 	return *rApp.Upload.Arn, nil
 }
 
+func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
+	params := &devicefarm.GetUploadInput{Arn: aws.String(arn)}
+	r, err := df.Client.GetUpload(params)
+	if err != nil {
+		return false, err
+	}
+	if *r.Upload.Status == devicefarm.UploadStatusFailed {
+		return false, errors.New("Upload failed: " + arn)
+	}
+	if *r.Upload.Status == devicefarm.UploadStatusSucceeded {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...string) error {
 	errchan := make(chan error, 1)
+	quitchan := make(chan bool, 1)
 	go func() {
-		var r *devicefarm.GetUploadOutput
 		var err error
+		var succeeded bool
 	mainloop:
 		for len(arns) > 0 {
+			select {
+			case <-quitchan:
+				break mainloop
+			default:
+			}
 			nextArns := []string{}
 			for _, arn := range arns {
-				params := &devicefarm.GetUploadInput{Arn: aws.String(arn)}
-				r, err = df.Client.GetUpload(params)
+				succeeded, err = df.UploadSucceeded(arn)
 				if err != nil {
 					break mainloop
 				}
-				if *r.Upload.Status == devicefarm.UploadStatusFailed {
-					err = errors.New("Upload failed: " + arn)
-					break mainloop
-				}
-				if *r.Upload.Status == devicefarm.UploadStatusSucceeded {
+				if succeeded {
 					continue
 				}
 				nextArns = append(nextArns, arn)
@@ -254,6 +271,7 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 	}()
 	select {
 	case <-time.After(time.Duration(timeoutMs) * time.Millisecond):
+		quitchan <- true
 		return errors.New("Timed out")
 	case err := <-errchan:
 		return err
@@ -261,6 +279,7 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 }
 
 func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation string) (string, error) {
+	log := df.Log
 	log.Println(">> Uploading files...")
 	log.Println(apk)
 	appArn, err := df.CreateUpload(projectArn, apk, "ANDROID_APP", "app.apk")

@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/codegangsta/cli"
 	"github.com/ride/devicefarm/awsutil"
 	"github.com/ride/devicefarm/build"
-	"log"
+	"github.com/ride/devicefarm/util"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -18,6 +17,7 @@ var currentUser *user.User
 var defaultAwsConfigFile string
 
 func init() {
+	log := getLogger()
 	var err error
 	currentUser, err = user.Current()
 	if err != nil {
@@ -90,11 +90,11 @@ func main() {
 }
 
 func commandRun(c *cli.Context) {
+	log := getLogger()
 	commandBuild(c)
 	pool := getDevicePool(c)
 	build := getBuild(c)
 	client := getClient()
-	//lookup := client.
 	apk := filepath.Join(build.Dir, build.Manifest.Android.Apk)
 	apkInstrumentation := filepath.Join(build.Dir, build.Manifest.Android.ApkInstrumentation)
 	runArn, err := client.CreateRun(build.Config.Arn, *pool.Arn, apk, apkInstrumentation)
@@ -107,9 +107,10 @@ func commandRun(c *cli.Context) {
 }
 
 func commandBuild(c *cli.Context) {
+	log := getLogger()
 	build := getBuild(c)
 	log.Println(">> Running build... (silencing output)")
-	err := build.Run()
+	err := build.RunLog(log)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -117,6 +118,7 @@ func commandBuild(c *cli.Context) {
 }
 
 func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
+	log := getLogger()
 	build := getBuild(c)
 	client := getClient()
 
@@ -170,6 +172,7 @@ func commandDevicePools(c *cli.Context) {
 }
 
 func commandDevices(c *cli.Context) {
+	log := getLogger()
 	client := getClient()
 	search := ""
 	if c.NArg() > 0 {
@@ -182,11 +185,12 @@ func commandDevices(c *cli.Context) {
 	}
 	devices := client.SearchDevices(search, androidOnly, iosOnly)
 	for _, device := range devices {
-		fmt.Println(*device.Name)
+		log.Println(*device.Name)
 	}
 }
 
 func findCreds() *credentials.Credentials {
+	log := getLogger()
 	ok, creds := awsutil.CredsFromEnv()
 	if !ok {
 		ok, creds = awsutil.CredsFromFile(defaultAwsConfigFile)
@@ -197,9 +201,20 @@ func findCreds() *credentials.Credentials {
 	return creds
 }
 
+func getLogger() util.Logger {
+	return util.DefaultLogger
+}
+
+var cachedClient *awsutil.DeviceFarm
+
 func getClient() *awsutil.DeviceFarm {
+	if cachedClient != nil {
+		return cachedClient
+	}
+	log := getLogger()
+
 	creds := findCreds()
-	client, err := awsutil.NewClient(creds)
+	client, err := awsutil.NewClient(creds, log)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -212,6 +227,7 @@ func getBuild(c *cli.Context) *build.Build {
 	if cachedBuild != nil {
 		return cachedBuild
 	}
+	log := getLogger()
 
 	dir := c.String("dir")
 	configFile := c.String("config")
