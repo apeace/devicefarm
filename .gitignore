@@ -7,3 +7,6 @@ devicefarm
 
 # vim swap files
 **/*.swp
+
+# IDE :D
+.idea
