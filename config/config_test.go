@@ -5,6 +5,25 @@ import (
 	"testing"
 )
 
+func TestNewArn(t *testing.T) {
+	assert := assert.New(t)
+
+	example := "arn:aws:devicefarm:us-west-2::device:5F9CEB47606A4709879003E11BEAFB08"
+	arn, err := NewArn(example)
+	assert.Nil(err)
+	assert.Equal(Arn{
+		Partition: "aws",
+		Service:   "devicefarm",
+		Region:    "us-west-2",
+		AccountId: "",
+		Resource:  "device:5F9CEB47606A4709879003E11BEAFB08",
+	}, *arn)
+
+	arn, err = NewArn("foo")
+	assert.Nil(arn)
+	assert.NotNil(err)
+}
+
 func TestMergeManifests(t *testing.T) {
 	assert := assert.New(t)
 
@@ -154,20 +173,22 @@ func TestNewInvalid(t *testing.T) {
 func TestConfigIsValid(t *testing.T) {
 	assert := assert.New(t)
 
+	arn := "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0"
+
 	// a valid config
-	c1 := Config{Arn: "foo", DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
+	c1 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
 	ok, err := c1.IsValid()
 	assert.True(ok)
 	assert.Nil(err)
 
 	// invalid due to blank device pool item
-	c2 := Config{Arn: "foo", DevicePoolDefinitions: map[string][]string{"foo": {""}}}
+	c2 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {""}}}
 	ok, err = c2.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
 
 	// invalid due to no device pool defs
-	c3 := Config{Arn: "foo"}
+	c3 := Config{Arn: arn}
 	ok, err = c3.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
@@ -179,7 +200,7 @@ func TestConfigIsValid(t *testing.T) {
 	assert.NotNil(err)
 
 	// invalid due to empty device pool def
-	c5 := Config{Arn: "foo", DevicePoolDefinitions: map[string][]string{"foo": {}}}
+	c5 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {}}}
 	ok, err = c5.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)

@@ -15,7 +15,6 @@ import (
 // detached state.
 var ErrGitDetached = errors.New("Your repo looks like it is in a detached state")
 
-
 // Cmd creates an exec.Cmd to run in the given directory.
 func Cmd(dir string, command string) *exec.Cmd {
 	parts := strings.Split(command, " ")
@@ -23,7 +22,6 @@ func Cmd(dir string, command string) *exec.Cmd {
 	cmd.Dir = dir
 	return cmd
 }
-
 
 // CopyFile copies the contents of one file to another file. If the
 // dst file already exists, its contents will be replaced.

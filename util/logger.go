@@ -1,11 +1,11 @@
 package util
 
 import (
-	"os"
+	"fmt"
+	"github.com/Sirupsen/logrus"
 	"io"
 	"io/ioutil"
-	"github.com/Sirupsen/logrus"
-	"fmt"
+	"os"
 )
 
 // CaptureWriter is an io.Writer that simply captures its inputs in a []string.
@@ -112,4 +112,3 @@ func (logger *StandardLogger) Print(args ...interface{}) {
 		panic(err)
 	}
 }
-

@@ -15,9 +15,9 @@ import (
 
 var currentUser *user.User
 var defaultAwsConfigFile string
+var log *util.StandardLogger = util.DefaultLogger
 
 func init() {
-	log := getLogger()
 	var err error
 	currentUser, err = user.Current()
 	if err != nil {
@@ -90,7 +90,6 @@ func main() {
 }
 
 func commandRun(c *cli.Context) {
-	log := getLogger()
 	commandBuild(c)
 	pool := getDevicePool(c)
 	build := getBuild(c)
@@ -107,7 +106,6 @@ func commandRun(c *cli.Context) {
 }
 
 func commandBuild(c *cli.Context) {
-	log := getLogger()
 	build := getBuild(c)
 	log.Println(">> Running build... (silencing output)")
 	err := build.RunLog(log)
@@ -118,7 +116,6 @@ func commandBuild(c *cli.Context) {
 }
 
 func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
-	log := getLogger()
 	build := getBuild(c)
 	client := getClient()
 
@@ -172,7 +169,6 @@ func commandDevicePools(c *cli.Context) {
 }
 
 func commandDevices(c *cli.Context) {
-	log := getLogger()
 	client := getClient()
 	search := ""
 	if c.NArg() > 0 {
@@ -190,7 +186,6 @@ func commandDevices(c *cli.Context) {
 }
 
 func findCreds() *credentials.Credentials {
-	log := getLogger()
 	ok, creds := awsutil.CredsFromEnv()
 	if !ok {
 		ok, creds = awsutil.CredsFromFile(defaultAwsConfigFile)
@@ -201,17 +196,12 @@ func findCreds() *credentials.Credentials {
 	return creds
 }
 
-func getLogger() util.Logger {
-	return util.DefaultLogger
-}
-
 var cachedClient *awsutil.DeviceFarm
 
 func getClient() *awsutil.DeviceFarm {
 	if cachedClient != nil {
 		return cachedClient
 	}
-	log := getLogger()
 
 	creds := findCreds()
 	client, err := awsutil.NewClient(creds, log)
@@ -227,7 +217,6 @@ func getBuild(c *cli.Context) *build.Build {
 	if cachedBuild != nil {
 		return cachedBuild
 	}
-	log := getLogger()
 
 	dir := c.String("dir")
 	configFile := c.String("config")
