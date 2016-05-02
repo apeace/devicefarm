@@ -3,8 +3,8 @@ package util
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
-	"testing"
 	"os"
+	"testing"
 )
 
 func TestCaptureLogger(t *testing.T) {
@@ -51,7 +51,7 @@ func ExampleNewCaptureLogger() {
 	log.Println("foo") // nothing written to stdout
 	log.Debugln("bar") // "bar" is written to stderr
 	log.Println("baz") // nothing written to stdout
-	w.Out() // []string{"foo", "baz"}
+	w.Out()            // []string{"foo", "baz"}
 }
 
 func ExampleNewStandardLogger() {
