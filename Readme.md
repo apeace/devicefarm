@@ -14,7 +14,7 @@ cp ~/Dropbox\ \(Ride\)/Engineering/DeviceFarm/devicefarm.json ~/.devicefarm.json
 
 ## Setup
 
-You should have a `devicefarm.yml` config in your repo, [like this one](https://github.com/ride/ride-app-android/pull/1297).
+You should have a `devicefarm.yml` config in your repo, [like this one](./config/testdata/config.yml).
 
 ## Features
 
@@ -28,22 +28,20 @@ You will need [access to AWS](https://github.com/ride/devops/blob/master/docs/aw
 # go into your android project
 $ cd /path/to/ride-app-android/
 
-# run tests. after a couple of minutes, you will get a URL
+# run tests. the output is a URL you can visit to view your test results.
 $ devicefarm run
-2016/04/29 09:13:54 >> Dir: .
-2016/04/29 09:13:54 >> Config: devicefarm.yml
-2016/04/29 09:13:54 >> Branch: devicefarm
-2016/04/29 09:13:54 >> Running build... (silencing output)
-2016/04/29 09:13:54 $ ./gradlew assembleDevelopment
-2016/04/29 09:15:19 $ ./gradlew assembleAndroidTest
-2016/04/29 09:17:54 >> Build complete
-2016/04/29 09:17:55 >> Device Pool: random (2 devices)
-2016/04/29 09:17:55 >> Uploading files...
-2016/04/29 09:17:55 /Users/apeace/code/ride-app-android/app/build/outputs/apk/app-development-debug.apk
-2016/04/29 09:18:01 /Users/apeace/code/ride-app-android/app/build/outputs/apk/app-development-debug-androidTest-unaligned.apk
-2016/04/29 09:18:01 >> Waiting for files to be processed...
-2016/04/29 09:19:01 >> Creating test run...
-2016/04/29 09:19:02 https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/projects/018d4112-c644-4e53-aa37-e83415f83f9f/runs/bd7c001b-dc93-4695-958f-8abbae775532
+>> Dir: /Users/apeace/code/MarkdownPreview, Config: devicefarm.yml, Branch: devicefarm
+>> Running build... (silencing output)
+$ ./gradlew assembleDebug
+$ ./gradlew assembleAndroidTest
+>> Build complete
+>> Device Pool: everything (9 devices)
+>> Uploading files...
+/Users/apeace/code/MarkdownPreview/app/build/outputs/apk/app-debug.apk
+/Users/apeace/code/MarkdownPreview/app/build/outputs/apk/app-debug-androidTest-unaligned.apk
+>> Waiting for files to be processed...
+>> Creating test run...
+https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/projects/1124416c-bfb2-4334-817c-e211ecef7dc0/runs/a07ca17f-d8ec-4adf-8e36-dc776b847705
 ```
 
 ### Update device pools
@@ -55,8 +53,6 @@ If you update your device pools in `devicefarm.yml` you can run tests on differe
 $ cd /path/to/ride-app-android/
 
 # if you checkout a branch, device pools will be tied only to that branch
-# you can just use master/develop if you want, but you may have conflicts
-# with others if they test on the same branch at the same time
 $ git checkout -b my-test-branch
 
 # now edit devicefarm.yml...

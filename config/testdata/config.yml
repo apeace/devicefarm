@@ -46,6 +46,10 @@ defaults:
       apk: ./path/to/build.apk
       apk_instrumentation: ./path/to/instrumentation.apk
 
+    # normally you would have this uncommented. we have it commented out
+    # in order to make a unit test fail
+    #devicepool: samsung_s5
+
 branches:
   master:
     devicepool: everything
