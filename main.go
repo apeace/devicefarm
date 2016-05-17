@@ -6,6 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/ride/devicefarm/awsutil"
 	"github.com/ride/devicefarm/build"
+	"github.com/ride/devicefarm/config"
 	"github.com/ride/devicefarm/util"
 	"os"
 	"os/user"
@@ -62,13 +63,6 @@ func main() {
 			Flags:     buildFlags,
 		},
 		{
-			Name:      "devicepools",
-			Usage:     "Sync devicepools with your YAML config",
-			ArgsUsage: " ",
-			Action:    commandDevicePools,
-			Flags:     buildFlags,
-		},
-		{
 			Name:      "devices",
 			Usage:     "Search device farm devices",
 			ArgsUsage: "[search]",
@@ -108,7 +102,7 @@ func commandRun(c *cli.Context) {
 func commandBuild(c *cli.Context) {
 	build := getBuild(c)
 	log.Println(">> Running build... (silencing output)")
-	err := build.RunLog(log)
+	err := build.Run()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -164,10 +158,6 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 	return matchingPool
 }
 
-func commandDevicePools(c *cli.Context) {
-	getDevicePool(c)
-}
-
 func commandDevices(c *cli.Context) {
 	client := getClient()
 	search := ""
@@ -181,7 +171,11 @@ func commandDevices(c *cli.Context) {
 	}
 	devices := client.SearchDevices(search, androidOnly, iosOnly)
 	for _, device := range devices {
-		log.Println(*device.Name)
+		arn, err := config.NewArn(*device.Arn)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		log.Printf("[%s] %s\n", arn.Resource, *device.Name)
 	}
 }
 
@@ -221,9 +215,6 @@ func getBuild(c *cli.Context) *build.Build {
 	dir := c.String("dir")
 	configFile := c.String("config")
 
-	log.Println(">> Dir: " + dir)
-	log.Println(">> Config: " + configFile)
-
 	if len(dir) > 1 && dir[:2] == "~/" {
 		dir = filepath.Join(currentUser.HomeDir, dir[2:])
 	}
@@ -237,12 +228,12 @@ func getBuild(c *cli.Context) *build.Build {
 		absConfigFile = filepath.Join(absDir, configFile)
 	}
 
-	build, err := build.New(absDir, absConfigFile)
+	build, err := build.New(log, absDir, absConfigFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	log.Println(">> Branch: " + build.Branch)
+	log.Printf(">> Dir: %s, Config: %s, Branch: %s\n", dir, configFile, build.Branch)
 
 	cachedBuild = build
 

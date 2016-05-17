@@ -7,6 +7,7 @@ Device Farm tests.
 package build
 
 import (
+	"github.com/ride/devicefarm/awsutil"
 	"github.com/ride/devicefarm/config"
 	"github.com/ride/devicefarm/util"
 )
@@ -15,14 +16,16 @@ import (
 // working directory, the current Git branch of that directory, the full
 // repo config, and the particular manifest for the given branch.
 type Build struct {
+	Log      util.Logger
 	Dir      string
 	Branch   string
 	Config   *config.Config
 	Manifest *config.BuildManifest
+	Client   *awsutil.DeviceFarm
 }
 
 // Creates a new Build from a directory and a config file
-func New(dir string, configFile string) (*Build, error) {
+func New(log util.Logger, dir string, configFile string) (*Build, error) {
 	config, err := config.New(configFile)
 	if err != nil {
 		return nil, err
@@ -36,6 +39,7 @@ func New(dir string, configFile string) (*Build, error) {
 		return nil, err
 	}
 	build := Build{
+		Log:      log,
 		Dir:      dir,
 		Branch:   branch,
 		Config:   config,
@@ -44,13 +48,9 @@ func New(dir string, configFile string) (*Build, error) {
 	return &build, nil
 }
 
-// Runs the build steps specified in this build's manifest, returning an error
-// if any of the build steps produced an error
-func (build *Build) RunLog(log util.Logger) error {
-	_, err := util.RunAllLog(log, build.Dir, build.Manifest.Steps...)
-	return err
-}
-
 func (build *Build) Run() error {
-	return build.RunLog(util.NilLogger)
+	// Runs the build steps specified in this build's manifest, returning an error
+	// if any of the build steps produced an error
+	_, err := util.RunAllLog(build.Log, build.Dir, build.Manifest.Steps...)
+	return err
 }

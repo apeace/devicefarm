@@ -10,8 +10,11 @@ import (
 	"testing"
 )
 
+var log *util.StandardLogger = util.NilLogger
+
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
+
 	tmpDir, err := ioutil.TempDir("", "devicefarm")
 	if err != nil {
 		t.Error(err)
@@ -22,14 +25,14 @@ func TestNew(t *testing.T) {
 	absConfigFile := path.Join(tmpDir, configFile)
 
 	// at this point we should fail because the dir has no config file
-	build, err := New(tmpDir, absConfigFile)
+	build, err := New(log, tmpDir, absConfigFile)
 	assert.Nil(build)
 	assert.NotNil(err)
 
 	util.CopyFile("../config/testdata/config.yml", absConfigFile)
 
 	// at this point we should fail because the dir is not a git repo
-	build, err = New(tmpDir, absConfigFile)
+	build, err = New(log, tmpDir, absConfigFile)
 	assert.Nil(build)
 	assert.NotNil(err)
 
@@ -43,20 +46,21 @@ func TestNew(t *testing.T) {
 
 	// at this point we should fail because the "foobar" manifest is
 	// not runnable
-	build, err = New(tmpDir, absConfigFile)
+	build, err = New(log, tmpDir, absConfigFile)
 	assert.Nil(build)
 	assert.NotNil(err)
 
 	util.RunAll(tmpDir, "git checkout -b master")
 
 	// now we should succeed
-	build, err = New(tmpDir, absConfigFile)
+	build, err = New(log, tmpDir, absConfigFile)
 	assert.NotNil(build)
 	assert.Nil(err)
 }
 
 func TestBuildRun(t *testing.T) {
 	assert := assert.New(t)
+
 	tmpDir, err := ioutil.TempDir("", "devicefarm")
 	if err != nil {
 		t.Error(err)
@@ -65,6 +69,7 @@ func TestBuildRun(t *testing.T) {
 
 	// should succeed. we don't need a complete Build in order to Run()
 	build := Build{
+		Log: log,
 		Dir: tmpDir,
 		Manifest: &config.BuildManifest{
 			Steps:      []string{"echo Foo", "echo Bar"},
