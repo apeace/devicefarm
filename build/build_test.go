@@ -54,8 +54,8 @@ func TestNew(t *testing.T) {
 
 	// now we should succeed
 	build, err = New(log, tmpDir, absConfigFile)
-	assert.NotNil(build)
 	assert.Nil(err)
+	assert.NotNil(build)
 }
 
 func TestBuildRun(t *testing.T) {

@@ -16,25 +16,25 @@ Here is an annotated example of what a config file should look like:
 	project_arn: arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0
 
 	# Device Pool definitions. this block defines three Device Pools:
-	# a_few_devices, samsung_s4_s5, and everything. The everything pool
+	# samsung_s4, samsung_s5, and everything. The everything pool
 	# simply includes both the other pools.
 	#
 	# This property is REQUIRED, must have at least one pool defined,
 	# and each pool must have at least one device.
-	devicepools:
-	  a_few_devices:
-		- Samsung S3
-		- Blah fone
+	devicepool_definitions:
+	samsung_s4:
+	  - (arn=device:D1C28D6B913C479399C0F594E1EBCAE4) Samsung Galaxy S4 (AT&T)
+	  - (arn=device:33F66BE404B543669978079E905F8637) Samsung Galaxy S4 (Sprint)
+	  - (arn=device:D45C750161314335924CE0B9B7D2558E) Samsung Galaxy S4 (T-Mobile)
 
-	  samsung_s4_s5:
-		- Samsung S4 TMobile
-		- Samsung S4 AT&T
-		- Samsung S5 TMobile
-		- Samsung S5 AT&T
+	samsung_s5:
+	  - (arn=device:5CC0164714304CBF81BB7B7C03DFC1A1) Samsung Galaxy S5 (AT&T)
+	  - (arn=device:18E28478F1D54525A15C2A821B6132FA) Samsung Galaxy S5 (Sprint)
+	  - (arn=device:5931A012CB1C4E68BD3434DF722ADBC8) Samsung Galaxy S5 (T-Mobile)
 
-	  everything:
-		- +a_few_devices
-		- +samsung_s4_s5
+	everything:
+	  - +samsung_s4
+	  - +samsung_s5
 
 	# Defaults defines the build config that will be used for all branches,
 	# unless overrides are specified in the branches section.
@@ -42,18 +42,18 @@ Here is an annotated example of what a config file should look like:
 	# This property is OPTIONAL, but building will fail on a particular branch
 	# unless a full definition is available for that branch.
 	defaults:
-		# The bash commands to run for this build.
-		build:
-		  - echo "Foo"
-		  - echo "Bar"
+	  # The bash commands to run for this build.
+	  build:
+	    - echo "Foo"
+	    - echo "Bar"
 
-		# The location of APK files, after build commands have been run.
-		android:
-		  apk: ./path/to/build.apk
-		  apk_instrumentation: ./path/to/instrumentation.apk
+	  # The location of APK files, after build commands have been run.
+	  android:
+	    apk: ./path/to/build.apk
+	    apk_instrumentation: ./path/to/instrumentation.apk
 
-		# The device pool name that tests should be run on.
-		devicepool: a_few_devices
+	  # The device pool name that tests should be run on.
+	  devicepool: samsung_s4
 
 	# Branches defines overrides for particular branches. For each branch,
 	# it accepts the same properties as `defaults`. Branch configs will be
@@ -65,7 +65,7 @@ Here is an annotated example of what a config file should look like:
 	# unless a full definition is available for that branch.
 	branches:
 	  master:
-		devicepool: everything
+	    devicepool: everything
 
 */
 package config

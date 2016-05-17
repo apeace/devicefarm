@@ -175,7 +175,7 @@ func commandDevices(c *cli.Context) {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		log.Printf("[%s] %s\n", arn.Resource, *device.Name)
+		log.Printf("(arn=%s) %s\n", arn.Resource, *device.Name)
 	}
 }
 

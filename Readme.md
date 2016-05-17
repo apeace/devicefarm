@@ -73,21 +73,21 @@ This way you can find devices you want to add to your device pools.
 ```bash
 # list all devices
 $ devicefarm devices
-Apple iPad Mini 2
-Samsung Galaxy Tab 3 10.1 (WiFi)
+(arn=device:306ABA42C96044ED9AC3EE8684B56C54) Apple iPad Mini 1st Gen
+(arn=device:5F9CEB47606A4709879003E11BEAFB08) Samsung Galaxy Tab 2 10.1 (WiFi)
 ...
 
 # list all devices matching "mini"
 $ devicefarm devices "mini"
-Apple iPad Mini 1st Gen
-Samsung Galaxy S3 Mini (AT&T)
+(arn=device:306ABA42C96044ED9AC3EE8684B56C54) Apple iPad Mini 1st Gen
+(arn=device:5C748437DC1C409EA595B98B1D7A8EDD) Samsung Galaxy S3 Mini (AT&T)
 ...
 
 # list all android devices matching "mini"
 # there is also an --ios flag :)
 $ devicefarm devices --android "mini"
-Samsung Galaxy S3 Mini (AT&T)
-Samsung Galaxy S4 mini (Verizon)
+(arn=device:5C748437DC1C409EA595B98B1D7A8EDD) Samsung Galaxy S3 Mini (AT&T)
+(arn=device:20766AF83D3A4FEF977643BFCDC2CE3A) Samsung Galaxy S4 mini (Verizon)
 ```
 
 ### More
