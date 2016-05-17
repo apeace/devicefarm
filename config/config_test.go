@@ -150,7 +150,7 @@ func TestNew(t *testing.T) {
 		DevicePool: "everything",
 	}
 	expected := Config{
-		Arn: "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0",
+		ProjectArn:            "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0",
 		DevicePoolDefinitions: devicePoolDefs,
 		Defaults:              defaultBuild,
 		Branches:              map[string]BuildManifest{"master": masterBuild},
@@ -190,19 +190,19 @@ func TestConfigIsValid(t *testing.T) {
 	arn := "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0"
 
 	// a valid config
-	c1 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
+	c1 := Config{ProjectArn: arn, DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
 	ok, err := c1.IsValid()
 	assert.True(ok)
 	assert.Nil(err)
 
 	// invalid due to blank device pool item
-	c2 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {""}}}
+	c2 := Config{ProjectArn: arn, DevicePoolDefinitions: map[string][]string{"foo": {""}}}
 	ok, err = c2.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
 
 	// invalid due to no device pool defs
-	c3 := Config{Arn: arn}
+	c3 := Config{ProjectArn: arn}
 	ok, err = c3.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
@@ -214,7 +214,7 @@ func TestConfigIsValid(t *testing.T) {
 	assert.NotNil(err)
 
 	// invalid due to empty device pool def
-	c5 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {}}}
+	c5 := Config{ProjectArn: arn, DevicePoolDefinitions: map[string][]string{"foo": {}}}
 	ok, err = c5.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)

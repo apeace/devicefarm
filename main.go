@@ -89,7 +89,7 @@ func commandRun(c *cli.Context) {
 	client := getClient()
 	apk := filepath.Join(build.Dir, build.Manifest.Android.Apk)
 	apkInstrumentation := filepath.Join(build.Dir, build.Manifest.Android.ApkInstrumentation)
-	runArn, err := client.CreateRun(build.Config.Arn, *pool.Arn, apk, apkInstrumentation)
+	runArn, err := client.CreateRun(build.Config.ProjectArn, *pool.Arn, apk, apkInstrumentation)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -117,7 +117,7 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 		log.Fatalln(err)
 	}
 
-	pools, err := client.ListDevicePools(build.Config.Arn)
+	pools, err := client.ListDevicePools(build.Config.ProjectArn)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -139,7 +139,7 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 
 	if matchingPool == nil {
 		log.Println("...creating")
-		matchingPool, err = client.CreateDevicePool(build.Config.Arn, remoteName, def)
+		matchingPool, err = client.CreateDevicePool(build.Config.ProjectArn, remoteName, def)
 		if err != nil {
 			log.Fatalln(err)
 		}

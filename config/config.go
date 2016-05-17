@@ -138,7 +138,7 @@ func (manifest *BuildManifest) IsRunnable() (bool, error) {
 // A Config specifies configuration for a particular repo: the names of DevicePools,
 // the default BuildManifest, and override BuildManifests for particular branches.
 type Config struct {
-	Arn                   string                   `yaml:"project_arn"`
+	ProjectArn            string                   `yaml:"project_arn"`
 	DevicePoolDefinitions map[string][]string      `yaml:"devicepool_definitions"`
 	Defaults              BuildManifest            `yaml:"defaults"`
 	Branches              map[string]BuildManifest `yaml:"branches"`
@@ -172,7 +172,7 @@ func New(filename string) (*Config, error) {
 //
 // See also BuildManifest#IsRunnable().
 func (config *Config) IsValid() (bool, error) {
-	if !util.ArnRegexp.MatchString(config.Arn) {
+	if !util.ArnRegexp.MatchString(config.ProjectArn) {
 		return false, fmt.Errorf("project_arn is required")
 	}
 	if len(config.DevicePoolDefinitions) == 0 {
