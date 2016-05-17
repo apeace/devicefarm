@@ -14,8 +14,14 @@ import (
 	"regexp"
 )
 
+// injected at compile time
+var Version string = "development"
+
+// set during init()
 var currentUser *user.User
 var defaultAwsConfigFile string
+
+// for convenience
 var log *util.StandardLogger = util.DefaultLogger
 
 func init() {
@@ -31,6 +37,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "devicefarm"
 	app.Usage = "Run UI tests in AWS Device Farm"
+	app.Version = Version
 
 	// these flags are used for anything which needs the context of
 	// a build directory
