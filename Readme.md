@@ -1,13 +1,11 @@
 # DeviceFarm
 
-Alpha release: v0.0.4
-
 ## Install
 
-[Click here](https://github.com/ride/devicefarm/releases/download/v0.0.4/devicefarm-osx) to download the `devicefarm` binary for OS X. Then complete the install by running:
+Go to [Releases](https://github.com/ride/devicefarm/releases/) and download the latest binary for your platform. Then
+move it to `/usr/local/bin/devicefarm` and run:
 
 ```
-mv ~/Downloads/devicefarm-osx /usr/local/bin/devicefarm
 chmod +x /usr/local/bin/devicefarm
 cp ~/Dropbox\ \(Ride\)/Engineering/DeviceFarm/devicefarm.json ~/.devicefarm.json
 ```
@@ -99,12 +97,11 @@ USAGE:
    devicefarm [global options] command [command options] [arguments...]
 
 VERSION:
-   0.0.0
+   development
 
 COMMANDS:
     run		Create test run based on YAML config
     build	Run local build based on YAML config
-    devicepools	Sync devicepools with your YAML config
     devices	Search device farm devices
 
 GLOBAL OPTIONS:
@@ -122,8 +119,6 @@ Right now only Android instrumentation tests are supported, and only command-lin
 
 Future work:
 
- * [v1.0](https://github.com/ride/devicefarm/milestones/v1.0.0) - Stabilize the existing feature set, higher level of unit-test coverage, automated releases (continuous delivery through CI).
- * v1.1 - Update to latest version with `devicefarm update`.
  * v1.x - Integrate with Github.
  * v2.0 - Rework `devicefarm.yml` format, introduce support for iOS and additional test types.
 

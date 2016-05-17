@@ -1,5 +1,6 @@
-# main binary
+# binaries
 devicefarm
+dist/
 
 # coverage files (see test.sh)
 **/coverage.html
