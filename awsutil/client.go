@@ -103,11 +103,7 @@ func (df *DeviceFarm) NamesToArns(names []string) ([]string, error) {
 	return arns, nil
 }
 
-func (df *DeviceFarm) CreateDevicePool(arn string, name string, deviceNames []string) (*devicefarm.DevicePool, error) {
-	arns, err := df.NamesToArns(deviceNames)
-	if err != nil {
-		return nil, err
-	}
+func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (*devicefarm.DevicePool, error) {
 	val, err := json.Marshal(arns)
 	if err != nil {
 		return nil, err
@@ -130,11 +126,7 @@ func (df *DeviceFarm) CreateDevicePool(arn string, name string, deviceNames []st
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, deviceNames []string) (*devicefarm.DevicePool, error) {
-	arns, err := df.NamesToArns(deviceNames)
-	if err != nil {
-		return nil, err
-	}
+func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []string) (*devicefarm.DevicePool, error) {
 	val, err := json.Marshal(arns)
 	if err != nil {
 		return nil, err
@@ -157,11 +149,7 @@ func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, deviceNames 
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, deviceNames []string) (bool, error) {
-	arns, err := df.NamesToArns(deviceNames)
-	if err != nil {
-		return false, err
-	}
+func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) (bool, error) {
 	val, err := json.Marshal(arns)
 	if err != nil {
 		return false, err

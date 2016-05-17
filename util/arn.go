@@ -48,10 +48,3 @@ func (arn *Arn) String() string {
 	parts := []string{"arn", arn.Partition, arn.Service, arn.Region, arn.AccountId, arn.Resource}
 	return strings.Join(parts, ":")
 }
-
-// DeviceDescription is the minimal description of a devicefarm.Device.
-// Just the Arn and a human-readable description.
-type DeviceDescription struct {
-	Arn         *Arn
-	Description string
-}

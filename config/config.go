@@ -244,31 +244,24 @@ func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
 	return flat, nil
 }
 
-// ParseDevicePoolDef takes a flattened device pool definition (the output of FlatDevicePoolDefinitions)
-// and parses the device strings into util.DeviceDescriptions.
-func ParseDevicePoolDef(defs map[string][]string) (map[string][]*util.DeviceDescription, error) {
+// DeviceArns takes a list of devices from a config file, and returns a list
+// of full ARNs.
+func DeviceArns(devices []string) ([]string, error) {
 	itemRegexp := regexp.MustCompile("\\(arn=([^\\)]+)\\)\\s*(.+)\\s*")
-	parsed := map[string][]*util.DeviceDescription{}
-	for name, items := range defs {
-		parsed[name] = []*util.DeviceDescription{}
-		for _, item := range items {
-			match := itemRegexp.FindStringSubmatch(item)
-			if len(match) < 3 {
-				return nil, errors.New("Invalid device " + item)
-			}
-			arn := util.Arn{
-				Partition: "aws",
-				Service:   "devicefarm",
-				Region:    "us-west-2",
-				AccountId: "",
-				Resource:  match[1],
-			}
-			desc := util.DeviceDescription{
-				Arn:         &arn,
-				Description: match[2],
-			}
-			parsed[name] = append(parsed[name], &desc)
+	parsed := []string{}
+	for _, item := range devices {
+		match := itemRegexp.FindStringSubmatch(item)
+		if len(match) < 3 {
+			return nil, errors.New("Invalid device " + item)
 		}
+		arn := util.Arn{
+			Partition: "aws",
+			Service:   "devicefarm",
+			Region:    "us-west-2",
+			AccountId: "",
+			Resource:  match[1],
+		}
+		parsed = append(parsed, arn.String())
 	}
 	return parsed, nil
 }

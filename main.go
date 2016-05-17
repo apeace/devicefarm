@@ -6,6 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/ride/devicefarm/awsutil"
 	"github.com/ride/devicefarm/build"
+	"github.com/ride/devicefarm/config"
 	"github.com/ride/devicefarm/util"
 	"os"
 	"os/user"
@@ -112,7 +113,7 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 	build := getBuild(c)
 	client := getClient()
 
-	poolDefs, err := build.Config.FlatDevicePoolDefinitions()
+	flatDefs, err := build.Config.FlatDevicePoolDefinitions()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -123,11 +124,17 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 	}
 
 	poolName := build.Manifest.DevicePool
-	def, ok := poolDefs[poolName]
+	def, ok := flatDefs[poolName]
 	if !ok {
 		log.Fatalln("Device Pool not defined: " + poolName)
 	}
-	log.Printf(">> Device Pool: %s (%d devices)\n", poolName, len(def))
+
+	arns, err := config.DeviceArns(def)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf(">> Device Pool: %s (%d devices)\n", poolName, len(arns))
 
 	remoteName := "df:" + build.Branch + ":" + poolName
 	var matchingPool *devicefarm.DevicePool
@@ -139,19 +146,19 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 
 	if matchingPool == nil {
 		log.Println("...creating")
-		matchingPool, err = client.CreateDevicePool(build.Config.ProjectArn, remoteName, def)
+		matchingPool, err = client.CreateDevicePool(build.Config.ProjectArn, remoteName, arns)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
 
-	matches, err := client.DevicePoolMatches(matchingPool, def)
+	matches, err := client.DevicePoolMatches(matchingPool, arns)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	if !matches {
 		log.Println("...updating")
-		matchingPool, err = client.UpdateDevicePool(matchingPool, def)
+		matchingPool, err = client.UpdateDevicePool(matchingPool, arns)
 	}
 
 	return matchingPool
