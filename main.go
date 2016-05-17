@@ -6,6 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/ride/devicefarm/awsutil"
 	"github.com/ride/devicefarm/build"
+	"github.com/ride/devicefarm/config"
 	"github.com/ride/devicefarm/util"
 	"os"
 	"os/user"
@@ -62,13 +63,6 @@ func main() {
 			Flags:     buildFlags,
 		},
 		{
-			Name:      "devicepools",
-			Usage:     "Sync devicepools with your YAML config",
-			ArgsUsage: " ",
-			Action:    commandDevicePools,
-			Flags:     buildFlags,
-		},
-		{
 			Name:      "devices",
 			Usage:     "Search device farm devices",
 			ArgsUsage: "[search]",
@@ -96,7 +90,7 @@ func commandRun(c *cli.Context) {
 	client := getClient()
 	apk := filepath.Join(build.Dir, build.Manifest.Android.Apk)
 	apkInstrumentation := filepath.Join(build.Dir, build.Manifest.Android.ApkInstrumentation)
-	runArn, err := client.CreateRun(build.Config.Arn, *pool.Arn, apk, apkInstrumentation)
+	runArn, err := client.CreateRun(build.Config.ProjectArn, *pool.Arn, apk, apkInstrumentation)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -108,7 +102,7 @@ func commandRun(c *cli.Context) {
 func commandBuild(c *cli.Context) {
 	build := getBuild(c)
 	log.Println(">> Running build... (silencing output)")
-	err := build.RunLog(log)
+	err := build.Run()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -119,22 +113,28 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 	build := getBuild(c)
 	client := getClient()
 
-	poolDefs, err := build.Config.FlatDevicePoolDefinitions()
+	flatDefs, err := build.Config.FlatDevicePoolDefinitions()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	pools, err := client.ListDevicePools(build.Config.Arn)
+	pools, err := client.ListDevicePools(build.Config.ProjectArn)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	poolName := build.Manifest.DevicePool
-	def, ok := poolDefs[poolName]
+	def, ok := flatDefs[poolName]
 	if !ok {
 		log.Fatalln("Device Pool not defined: " + poolName)
 	}
-	log.Printf(">> Device Pool: %s (%d devices)\n", poolName, len(def))
+
+	arns, err := config.DeviceArns(def)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf(">> Device Pool: %s (%d devices)\n", poolName, len(arns))
 
 	remoteName := "df:" + build.Branch + ":" + poolName
 	var matchingPool *devicefarm.DevicePool
@@ -146,26 +146,22 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 
 	if matchingPool == nil {
 		log.Println("...creating")
-		matchingPool, err = client.CreateDevicePool(build.Config.Arn, remoteName, def)
+		matchingPool, err = client.CreateDevicePool(build.Config.ProjectArn, remoteName, arns)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
 
-	matches, err := client.DevicePoolMatches(matchingPool, def)
+	matches, err := client.DevicePoolMatches(matchingPool, arns)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	if !matches {
 		log.Println("...updating")
-		matchingPool, err = client.UpdateDevicePool(matchingPool, def)
+		matchingPool, err = client.UpdateDevicePool(matchingPool, arns)
 	}
 
 	return matchingPool
-}
-
-func commandDevicePools(c *cli.Context) {
-	getDevicePool(c)
 }
 
 func commandDevices(c *cli.Context) {
@@ -181,7 +177,11 @@ func commandDevices(c *cli.Context) {
 	}
 	devices := client.SearchDevices(search, androidOnly, iosOnly)
 	for _, device := range devices {
-		log.Println(*device.Name)
+		arn, err := util.NewArn(*device.Arn)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		log.Printf("(arn=%s) %s\n", arn.Resource, *device.Name)
 	}
 }
 
@@ -221,9 +221,6 @@ func getBuild(c *cli.Context) *build.Build {
 	dir := c.String("dir")
 	configFile := c.String("config")
 
-	log.Println(">> Dir: " + dir)
-	log.Println(">> Config: " + configFile)
-
 	if len(dir) > 1 && dir[:2] == "~/" {
 		dir = filepath.Join(currentUser.HomeDir, dir[2:])
 	}
@@ -237,12 +234,12 @@ func getBuild(c *cli.Context) *build.Build {
 		absConfigFile = filepath.Join(absDir, configFile)
 	}
 
-	build, err := build.New(absDir, absConfigFile)
+	build, err := build.New(log, absDir, absConfigFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	log.Println(">> Branch: " + build.Branch)
+	log.Printf(">> Dir: %s, Config: %s, Branch: %s\n", dir, configFile, build.Branch)
 
 	cachedBuild = build
 

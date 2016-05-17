@@ -5,25 +5,6 @@ import (
 	"testing"
 )
 
-func TestNewArn(t *testing.T) {
-	assert := assert.New(t)
-
-	example := "arn:aws:devicefarm:us-west-2::device:5F9CEB47606A4709879003E11BEAFB08"
-	arn, err := NewArn(example)
-	assert.Nil(err)
-	assert.Equal(Arn{
-		Partition: "aws",
-		Service:   "devicefarm",
-		Region:    "us-west-2",
-		AccountId: "",
-		Resource:  "device:5F9CEB47606A4709879003E11BEAFB08",
-	}, *arn)
-
-	arn, err = NewArn("foo")
-	assert.Nil(arn)
-	assert.NotNil(err)
-}
-
 func TestMergeManifests(t *testing.T) {
 	assert := assert.New(t)
 
@@ -120,9 +101,42 @@ func TestNew(t *testing.T) {
 
 	// build the expected config
 	devicePoolDefs := map[string][]string{
-		"a_few_devices": {"Samsung S3", "Blah fone"},
-		"samsung_s4_s5": {"Samsung S4 TMobile", "Samsung S4 AT&T", "Samsung S5 TMobile", "Samsung S5 AT&T"},
-		"everything":    {"+a_few_devices", "+samsung_s4_s5"},
+		"samsung_s3": {
+			"(arn=device:50E24178F2274CFFA577EF130440D066) Samsung Galaxy S3 (AT&T)",
+			"(arn=device:71F791A0C3CA4E9999304A1E8484339B) Samsung Galaxy S3 (Sprint)",
+			"(arn=device:9E079354B7E9422CA52FF61B0BE345A1) Samsung Galaxy S3 (T-Mobile)",
+			"(arn=device:E024E20134534DE1AFD87038726AB05C) Samsung Galaxy S3 (Verizon)",
+			"(arn=device:BD86B8701031476BA30AF3D03F06B665) Samsung Galaxy S3 (Verizon)",
+			"(arn=device:B6100FEA90BC4B21BD6C607865AD46F2) Samsung Galaxy S3 LTE (T-Mobile)",
+			"(arn=device:5C748437DC1C409EA595B98B1D7A8EDD) Samsung Galaxy S3 Mini (AT&T)",
+		},
+		"samsung_s4": {
+			"(arn=device:D1C28D6B913C479399C0F594E1EBCAE4) Samsung Galaxy S4 (AT&T)",
+			"(arn=device:449870B9550C4840ACC1C1B59A7027FB) Samsung Galaxy S4 (AT&T)",
+			"(arn=device:2A81F49C0CBD4AB6B1C2C58C1498F51F) Samsung Galaxy S4 (AT&T)",
+			"(arn=device:33F66BE404B543669978079E905F8637) Samsung Galaxy S4 (Sprint)",
+			"(arn=device:D45C750161314335924CE0B9B7D2558E) Samsung Galaxy S4 (T-Mobile)",
+			"(arn=device:9E882A633A8E4ADC9C402AD22B1455E4) Samsung Galaxy S4 (US Cellular)",
+			"(arn=device:47869F01A5F44B8999030BC0580703E5) Samsung Galaxy S4 (Verizon)",
+			"(arn=device:6E920D51A4624ECA9EC856E0CAE733B9) Samsung Galaxy S4 (Verizon)",
+			"(arn=device:577DC08D6B964346B86610CFF090CD59) Samsung Galaxy S4 Active (AT&T)",
+			"(arn=device:F17F20E555C54544B722557AF43B015E) Samsung Galaxy S4 Tri-band (Sprint)",
+			"(arn=device:20766AF83D3A4FEF977643BFCDC2CE3A) Samsung Galaxy S4 mini (Verizon)",
+		},
+		"samsung_s5": {
+			"(arn=device:5CC0164714304CBF81BB7B7C03DFC1A1) Samsung Galaxy S5 (AT&T)",
+			"(arn=device:53586C603C5A4FA38602D11AD917B01E) Samsung Galaxy S5 (AT&T)",
+			"(arn=device:18E28478F1D54525A15C2A821B6132FA) Samsung Galaxy S5 (Sprint)",
+			"(arn=device:D6F125CF316C47B09F5190C16DE979A9) Samsung Galaxy S5 (Sprint)",
+			"(arn=device:5931A012CB1C4E68BD3434DF722ADBC8) Samsung Galaxy S5 (T-Mobile)",
+			"(arn=device:C30737D1E582482C9D06BC4878E7F795) Samsung Galaxy S5 (Verizon)",
+			"(arn=device:9710D509338C4639ADEFC5D6E99F45E6) Samsung Galaxy S5 Active (AT&T)",
+		},
+		"everything": {
+			"+samsung_s3",
+			"+samsung_s4",
+			"+samsung_s5",
+		},
 	}
 	defaultBuild := BuildManifest{
 		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
@@ -136,7 +150,7 @@ func TestNew(t *testing.T) {
 		DevicePool: "everything",
 	}
 	expected := Config{
-		Arn: "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0",
+		ProjectArn:            "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0",
 		DevicePoolDefinitions: devicePoolDefs,
 		Defaults:              defaultBuild,
 		Branches:              map[string]BuildManifest{"master": masterBuild},
@@ -176,19 +190,19 @@ func TestConfigIsValid(t *testing.T) {
 	arn := "arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0"
 
 	// a valid config
-	c1 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
+	c1 := Config{ProjectArn: arn, DevicePoolDefinitions: map[string][]string{"foo": {"bar"}}}
 	ok, err := c1.IsValid()
 	assert.True(ok)
 	assert.Nil(err)
 
 	// invalid due to blank device pool item
-	c2 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {""}}}
+	c2 := Config{ProjectArn: arn, DevicePoolDefinitions: map[string][]string{"foo": {""}}}
 	ok, err = c2.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
 
 	// invalid due to no device pool defs
-	c3 := Config{Arn: arn}
+	c3 := Config{ProjectArn: arn}
 	ok, err = c3.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
@@ -200,7 +214,7 @@ func TestConfigIsValid(t *testing.T) {
 	assert.NotNil(err)
 
 	// invalid due to empty device pool def
-	c5 := Config{Arn: arn, DevicePoolDefinitions: map[string][]string{"foo": {}}}
+	c5 := Config{ProjectArn: arn, DevicePoolDefinitions: map[string][]string{"foo": {}}}
 	ok, err = c5.IsValid()
 	assert.False(ok)
 	assert.NotNil(err)
@@ -257,4 +271,24 @@ func TestFlatDevicePoolDefinitions(t *testing.T) {
 	config = Config{DevicePoolDefinitions: defs}
 	flat, err = config.FlatDevicePoolDefinitions()
 	assert.NotNil(err)
+}
+
+func TestDeviceArns(t *testing.T) {
+	assert := assert.New(t)
+
+	// should fail because invalid format
+	devices := []string{"foo"}
+	parsed, err := DeviceArns(devices)
+	assert.NotNil(err)
+	assert.Nil(parsed)
+
+	// should succeed
+	devices = []string{
+		"(arn=device:50E24178F2274CFFA577EF130440D066) Samsung Galaxy S3 (AT&T)",
+	}
+	parsed, err = DeviceArns(devices)
+	assert.Nil(err)
+	assert.Equal([]string{
+		"arn:aws:devicefarm:us-west-2::device:50E24178F2274CFFA577EF130440D066",
+	}, parsed)
 }

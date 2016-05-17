@@ -16,25 +16,25 @@ Here is an annotated example of what a config file should look like:
 	project_arn: arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0
 
 	# Device Pool definitions. this block defines three Device Pools:
-	# a_few_devices, samsung_s4_s5, and everything. The everything pool
+	# samsung_s4, samsung_s5, and everything. The everything pool
 	# simply includes both the other pools.
 	#
 	# This property is REQUIRED, must have at least one pool defined,
 	# and each pool must have at least one device.
-	devicepools:
-	  a_few_devices:
-		- Samsung S3
-		- Blah fone
+	devicepool_definitions:
+	samsung_s4:
+	  - (arn=device:D1C28D6B913C479399C0F594E1EBCAE4) Samsung Galaxy S4 (AT&T)
+	  - (arn=device:33F66BE404B543669978079E905F8637) Samsung Galaxy S4 (Sprint)
+	  - (arn=device:D45C750161314335924CE0B9B7D2558E) Samsung Galaxy S4 (T-Mobile)
 
-	  samsung_s4_s5:
-		- Samsung S4 TMobile
-		- Samsung S4 AT&T
-		- Samsung S5 TMobile
-		- Samsung S5 AT&T
+	samsung_s5:
+	  - (arn=device:5CC0164714304CBF81BB7B7C03DFC1A1) Samsung Galaxy S5 (AT&T)
+	  - (arn=device:18E28478F1D54525A15C2A821B6132FA) Samsung Galaxy S5 (Sprint)
+	  - (arn=device:5931A012CB1C4E68BD3434DF722ADBC8) Samsung Galaxy S5 (T-Mobile)
 
-	  everything:
-		- +a_few_devices
-		- +samsung_s4_s5
+	everything:
+	  - +samsung_s4
+	  - +samsung_s5
 
 	# Defaults defines the build config that will be used for all branches,
 	# unless overrides are specified in the branches section.
@@ -42,18 +42,18 @@ Here is an annotated example of what a config file should look like:
 	# This property is OPTIONAL, but building will fail on a particular branch
 	# unless a full definition is available for that branch.
 	defaults:
-		# The bash commands to run for this build.
-		build:
-		  - echo "Foo"
-		  - echo "Bar"
+	  # The bash commands to run for this build.
+	  build:
+	    - echo "Foo"
+	    - echo "Bar"
 
-		# The location of APK files, after build commands have been run.
-		android:
-		  apk: ./path/to/build.apk
-		  apk_instrumentation: ./path/to/instrumentation.apk
+	  # The location of APK files, after build commands have been run.
+	  android:
+	    apk: ./path/to/build.apk
+	    apk_instrumentation: ./path/to/instrumentation.apk
 
-		# The device pool name that tests should be run on.
-		devicepool: a_few_devices
+	  # The device pool name that tests should be run on.
+	  devicepool: samsung_s4
 
 	# Branches defines overrides for particular branches. For each branch,
 	# it accepts the same properties as `defaults`. Branch configs will be
@@ -65,7 +65,7 @@ Here is an annotated example of what a config file should look like:
 	# unless a full definition is available for that branch.
 	branches:
 	  master:
-		devicepool: everything
+	    devicepool: everything
 
 */
 package config
@@ -73,53 +73,17 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/ride/devicefarm/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"regexp"
 	"sort"
 )
 
-// ArnRegexp matches an AWS ARN with the following capture groups:
-//  1: partition
-//  2: service
-//  3: region
-//  4: account-id
-//  5: resource
-// Note that the resource may be in one of these forms:
-//  resource, resourcetype:resource, resourcetype/resource
-// See:
-// http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genref-arns
-var ArnRegexp *regexp.Regexp = regexp.MustCompile("arn:([^:]+):([^:]+):([^:]+):([^:]*):(.*)")
-
 // An AndroidConfig specifies the location of APKs after running the build steps.
 type AndroidConfig struct {
 	Apk                string `yaml:"apk"`
 	ApkInstrumentation string `yaml:"apk_instrumentation"`
-}
-
-// An Arn specifies the pieces of an AWS ARN
-type Arn struct {
-	Partition string
-	Service   string
-	Region    string
-	AccountId string
-	Resource  string
-}
-
-// NewArn parses an ARN string and returns an Arn struct.
-// If the ARN is invalid, it returns an error.
-func NewArn(arn string) (*Arn, error) {
-	match := ArnRegexp.FindStringSubmatch(arn)
-	if len(match) != 6 {
-		return nil, errors.New("Invalid ARN: " + arn)
-	}
-	return &Arn{
-		Partition: match[1],
-		Service:   match[2],
-		Region:    match[3],
-		AccountId: match[4],
-		Resource:  match[5],
-	}, nil
 }
 
 // A BuildManifest specifies the whole configuration for a build: the steps to
@@ -175,7 +139,7 @@ func (manifest *BuildManifest) IsRunnable() (bool, error) {
 // A Config specifies configuration for a particular repo: the names of DevicePools,
 // the default BuildManifest, and override BuildManifests for particular branches.
 type Config struct {
-	Arn                   string                   `yaml:"project_arn"`
+	ProjectArn            string                   `yaml:"project_arn"`
 	DevicePoolDefinitions map[string][]string      `yaml:"devicepool_definitions"`
 	Defaults              BuildManifest            `yaml:"defaults"`
 	Branches              map[string]BuildManifest `yaml:"branches"`
@@ -209,7 +173,7 @@ func New(filename string) (*Config, error) {
 //
 // See also BuildManifest#IsRunnable().
 func (config *Config) IsValid() (bool, error) {
-	if !ArnRegexp.MatchString(config.Arn) {
+	if !util.ArnRegexp.MatchString(config.ProjectArn) {
 		return false, fmt.Errorf("project_arn is required")
 	}
 	if len(config.DevicePoolDefinitions) == 0 {
@@ -278,4 +242,26 @@ func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
 		flat[name] = deviceNames
 	}
 	return flat, nil
+}
+
+// DeviceArns takes a list of devices from a config file, and returns a list
+// of full ARNs.
+func DeviceArns(devices []string) ([]string, error) {
+	itemRegexp := regexp.MustCompile("\\(arn=([^\\)]+)\\)\\s*(.+)\\s*")
+	parsed := []string{}
+	for _, item := range devices {
+		match := itemRegexp.FindStringSubmatch(item)
+		if len(match) < 3 {
+			return nil, errors.New("Invalid device " + item)
+		}
+		arn := util.Arn{
+			Partition: "aws",
+			Service:   "devicefarm",
+			Region:    "us-west-2",
+			AccountId: "",
+			Resource:  match[1],
+		}
+		parsed = append(parsed, arn.String())
+	}
+	return parsed, nil
 }
