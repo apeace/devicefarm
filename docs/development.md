@@ -62,3 +62,7 @@ govendor add +external
 # and commit it
 git add --all vendor/
 ```
+
+## Releasing
+
+Just push a tag. Circle will create the release on Github automatically.
