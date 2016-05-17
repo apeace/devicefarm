@@ -23,3 +23,17 @@ func TestNewArn(t *testing.T) {
 	assert.Nil(arn)
 	assert.NotNil(err)
 }
+
+func TestArnString(t *testing.T) {
+	assert := assert.New(t)
+
+	example := Arn{
+		Partition: "aws",
+		Service:   "devicefarm",
+		Region:    "us-west-2",
+		AccountId: "",
+		Resource:  "device:5F9CEB47606A4709879003E11BEAFB08",
+	}
+	arn := example.String()
+	assert.Equal("arn:aws:devicefarm:us-west-2::device:5F9CEB47606A4709879003E11BEAFB08", arn)
+}

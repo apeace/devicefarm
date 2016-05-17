@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"regexp"
+	"strings"
 )
 
 // ArnRegexp matches an AWS ARN with the following capture groups:
@@ -40,4 +41,17 @@ func NewArn(arn string) (*Arn, error) {
 		AccountId: match[4],
 		Resource:  match[5],
 	}, nil
+}
+
+// String returns a string representation of the ARN
+func (arn *Arn) String() string {
+	parts := []string{"arn", arn.Partition, arn.Service, arn.Region, arn.AccountId, arn.Resource}
+	return strings.Join(parts, ":")
+}
+
+// DeviceDescription is the minimal description of a devicefarm.Device.
+// Just the Arn and a human-readable description.
+type DeviceDescription struct {
+	Arn         *Arn
+	Description string
 }
