@@ -90,19 +90,6 @@ func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, err
 	return r.DevicePools, nil
 }
 
-func (df *DeviceFarm) NamesToArns(names []string) ([]string, error) {
-	lookup := df.DevicesLookup()
-	arns := []string{}
-	for _, name := range names {
-		device, ok := lookup[name]
-		if !ok {
-			return nil, errors.New("No such device: " + name)
-		}
-		arns = append(arns, *device.Arn)
-	}
-	return arns, nil
-}
-
 func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (*devicefarm.DevicePool, error) {
 	val, err := json.Marshal(arns)
 	if err != nil {
