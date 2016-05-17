@@ -6,7 +6,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/ride/devicefarm/awsutil"
 	"github.com/ride/devicefarm/build"
-	"github.com/ride/devicefarm/config"
 	"github.com/ride/devicefarm/util"
 	"os"
 	"os/user"
@@ -171,7 +170,7 @@ func commandDevices(c *cli.Context) {
 	}
 	devices := client.SearchDevices(search, androidOnly, iosOnly)
 	for _, device := range devices {
-		arn, err := config.NewArn(*device.Arn)
+		arn, err := util.NewArn(*device.Arn)
 		if err != nil {
 			log.Fatalln(err)
 		}
