@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/ride/devicefarm/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -271,4 +272,33 @@ func TestFlatDevicePoolDefinitions(t *testing.T) {
 	config = Config{DevicePoolDefinitions: defs}
 	flat, err = config.FlatDevicePoolDefinitions()
 	assert.NotNil(err)
+}
+
+func TestParseDevicePoolDef(t *testing.T) {
+	assert := assert.New(t)
+
+	// should fail because invalid format
+	def := map[string][]string{
+		"foo": {"foo"},
+	}
+	parsed, err := ParseDevicePoolDef(def)
+	assert.NotNil(err)
+	assert.Nil(parsed)
+
+	// should succeed
+	def = map[string][]string{
+		"foo": {"(arn=device:50E24178F2274CFFA577EF130440D066) Samsung Galaxy S3 (AT&T)"},
+	}
+	parsed, err = ParseDevicePoolDef(def)
+	assert.Nil(err)
+	assert.Equal(map[string][]*util.DeviceDescription{"foo": {{
+		Arn: &util.Arn{
+			Partition: "aws",
+			Service:   "devicefarm",
+			Region:    "us-west-2",
+			AccountId: "",
+			Resource:  "device:50E24178F2274CFFA577EF130440D066",
+		},
+		Description: "Samsung Galaxy S3 (AT&T)",
+	}}}, parsed)
 }

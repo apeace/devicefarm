@@ -76,6 +76,7 @@ import (
 	"github.com/ride/devicefarm/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"regexp"
 	"sort"
 )
 
@@ -241,4 +242,33 @@ func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
 		flat[name] = deviceNames
 	}
 	return flat, nil
+}
+
+// ParseDevicePoolDef takes a flattened device pool definition (the output of FlatDevicePoolDefinitions)
+// and parses the device strings into util.DeviceDescriptions.
+func ParseDevicePoolDef(defs map[string][]string) (map[string][]*util.DeviceDescription, error) {
+	itemRegexp := regexp.MustCompile("\\(arn=([^\\)]+)\\)\\s*(.+)\\s*")
+	parsed := map[string][]*util.DeviceDescription{}
+	for name, items := range defs {
+		parsed[name] = []*util.DeviceDescription{}
+		for _, item := range items {
+			match := itemRegexp.FindStringSubmatch(item)
+			if len(match) < 3 {
+				return nil, errors.New("Invalid device " + item)
+			}
+			arn := util.Arn{
+				Partition: "aws",
+				Service:   "devicefarm",
+				Region:    "us-west-2",
+				AccountId: "",
+				Resource:  match[1],
+			}
+			desc := util.DeviceDescription{
+				Arn:         &arn,
+				Description: match[2],
+			}
+			parsed[name] = append(parsed[name], &desc)
+		}
+	}
+	return parsed, nil
 }
