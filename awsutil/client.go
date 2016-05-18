@@ -58,8 +58,8 @@ func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly boo
 	return
 }
 
-func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, error) {
-	params := &devicefarm.ListDevicePoolsInput{Arn: aws.String(arn)}
+func (df *DeviceFarm) ListDevicePools(projectArn string) ([]*devicefarm.DevicePool, error) {
+	params := &devicefarm.ListDevicePoolsInput{Arn: aws.String(projectArn)}
 	r, err := df.Client.ListDevicePools(params)
 	if err != nil {
 		return nil, err
@@ -67,11 +67,11 @@ func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, err
 	return r.DevicePools, nil
 }
 
-func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (*devicefarm.DevicePool, error) {
+func (df *DeviceFarm) CreateDevicePool(projectArn string, name string, deviceArns []string) (*devicefarm.DevicePool, error) {
 	// there will never be an error marshalling a simple slice of strings
-	val, _ := json.Marshal(arns)
+	val, _ := json.Marshal(deviceArns)
 	params := &devicefarm.CreateDevicePoolInput{
-		ProjectArn: aws.String(arn),
+		ProjectArn: aws.String(projectArn),
 		Name:       aws.String(name),
 		Rules: []*devicefarm.Rule{
 			{
@@ -88,9 +88,9 @@ func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []string) (*devicefarm.DevicePool, error) {
+func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, deviceArns []string) (*devicefarm.DevicePool, error) {
 	// there will never be an error marshalling a simple slice of strings
-	val, _ := json.Marshal(arns)
+	val, _ := json.Marshal(deviceArns)
 	params := &devicefarm.UpdateDevicePoolInput{
 		Arn:  pool.Arn,
 		Name: pool.Name,
@@ -109,9 +109,9 @@ func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []strin
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) bool {
+func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, deviceArns []string) bool {
 	// there will never be an error marshalling a simple slice of strings
-	val, _ := json.Marshal(arns)
+	val, _ := json.Marshal(deviceArns)
 	for _, rule := range pool.Rules {
 		if *rule.Attribute != "ARN" || *rule.Operator != "IN" {
 			return false
@@ -185,8 +185,8 @@ func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
 }
 
 func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...string) error {
-	errchan := make(chan error, 1)
-	quitchan := make(chan bool, 1)
+	errchan := make(chan error)
+	quitchan := make(chan bool)
 	go func() {
 		var err error
 		var succeeded bool
