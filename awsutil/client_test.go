@@ -21,8 +21,7 @@ var iosDevice *devicefarm.Device = &devicefarm.Device{
 	Arn:      aws.String("arn456"),
 }
 
-func mockClient(t *testing.T) (*DeviceFarm, *MockClient) {
-	// mock client and ListDevicesOutput
+func mockClient() (*DeviceFarm, *MockClient) {
 	mock := &MockClient{}
 	client := &DeviceFarm{mock, util.NilLogger, nil, false}
 	return client, mock
@@ -30,7 +29,7 @@ func mockClient(t *testing.T) (*DeviceFarm, *MockClient) {
 
 func TestSearchDevices(t *testing.T) {
 	assert := assert.New(t)
-	client, mock := mockClient(t)
+	client, mock := mockClient()
 
 	// enqueue mock output with two devices
 	output := &devicefarm.ListDevicesOutput{}
@@ -67,9 +66,35 @@ func TestSearchDevices(t *testing.T) {
 	assert.Nil(result)
 }
 
+func TestListDevicePools(t *testing.T) {
+	assert := assert.New(t)
+	client, mock := mockClient()
+
+	// should succeed
+	output := &devicefarm.ListDevicePoolsOutput{
+		DevicePools: []*devicefarm.DevicePool{
+			&devicefarm.DevicePool{
+				Arn:         aws.String("foo"),
+				Description: aws.String("foo"),
+				Name:        aws.String("foo"),
+			},
+		},
+	}
+	mock.enqueue(output, nil)
+	pools, err := client.ListDevicePools("foo")
+	assert.Nil(err)
+	assert.Equal(output.DevicePools, pools)
+
+	// should fail
+	mock.enqueue(nil, errors.New("fake error"))
+	pools, err = client.ListDevicePools("foo")
+	assert.NotNil(err)
+	assert.Nil(pools)
+}
+
 func TestWaitForUploadsToSucceed(t *testing.T) {
 	assert := assert.New(t)
-	client, mock := mockClient(t)
+	client, mock := mockClient()
 
 	// should succeed immediately
 	output := &devicefarm.GetUploadOutput{

@@ -211,7 +211,16 @@ func (client *MockClient) ListDevicePoolsRequest(*devicefarm.ListDevicePoolsInpu
 }
 
 func (client *MockClient) ListDevicePools(*devicefarm.ListDevicePoolsInput) (*devicefarm.ListDevicePoolsOutput, error) {
-	panic("Not implemented")
+	response := client.dequeue()
+	var out *devicefarm.ListDevicePoolsOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.ListDevicePoolsOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) ListDevicePoolsPages(*devicefarm.ListDevicePoolsInput, func(*devicefarm.ListDevicePoolsOutput, bool) bool) error {
