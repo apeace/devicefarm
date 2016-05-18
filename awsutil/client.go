@@ -68,10 +68,8 @@ func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, err
 }
 
 func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (*devicefarm.DevicePool, error) {
-	val, err := json.Marshal(arns)
-	if err != nil {
-		return nil, err
-	}
+	// there will never be an error marshalling a simple slice of strings
+	val, _ := json.Marshal(arns)
 	params := &devicefarm.CreateDevicePoolInput{
 		ProjectArn: aws.String(arn),
 		Name:       aws.String(name),
