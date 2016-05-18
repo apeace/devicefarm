@@ -182,7 +182,10 @@ func commandDevices(c *cli.Context) {
 	if androidOnly && iosOnly {
 		log.Fatalln("Cannot use both --android and --ios")
 	}
-	devices := client.SearchDevices(search, androidOnly, iosOnly)
+	devices, err := client.SearchDevices(search, androidOnly, iosOnly)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	for _, device := range devices {
 		arn, err := util.NewArn(*device.Arn)
 		if err != nil {
@@ -211,10 +214,7 @@ func getClient() *awsutil.DeviceFarm {
 	}
 
 	creds := findCreds()
-	client, err := awsutil.NewClient(creds, log)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	client := awsutil.NewClient(creds, log)
 	return client
 }
 

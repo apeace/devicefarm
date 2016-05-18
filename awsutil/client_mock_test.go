@@ -29,6 +29,9 @@ func (client *MockClient) enqueue(values ...interface{}) {
 }
 
 func (client *MockClient) dequeue() []interface{} {
+	if len(client.responses) == 0 {
+		panic("Nothing in MockClient queue")
+	}
 	response := client.responses[0]
 	client.responses = client.responses[1:]
 	return response

@@ -25,56 +25,46 @@ func mockClient(t *testing.T) (*DeviceFarm, *MockClient) {
 	// mock client and ListDevicesOutput
 	mock := &MockClient{}
 	client := &DeviceFarm{mock, util.NilLogger, nil, false}
-	output := &devicefarm.ListDevicesOutput{}
-
-	// add both devices and enqueue mock output
-	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
-	mock.enqueue(output, nil)
-
-	// init should succeed
-	err := client.Init()
-	assert.Nil(t, err)
-
 	return client, mock
-}
-
-func TestInit(t *testing.T) {
-	assert := assert.New(t)
-
-	// test error case
-	mock := &MockClient{}
-	client := &DeviceFarm{mock, util.NilLogger, nil, false}
-	mock.enqueue(nil, errors.New("Fake error"))
-	err := client.Init()
-	assert.NotNil(err)
-
-	// test success case
-	client, _ = mockClient(t)
-
-	// init should succeed another time
-	err = client.Init()
-	assert.Nil(err)
 }
 
 func TestSearchDevices(t *testing.T) {
 	assert := assert.New(t)
-	client, _ := mockClient(t)
+	client, mock := mockClient(t)
+
+	// enqueue mock output with two devices
+	output := &devicefarm.ListDevicesOutput{}
+	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
+	mock.enqueue(output, nil)
 
 	// blank search should return both devices, sorted
-	result := client.SearchDevices("", false, false)
+	result, err := client.SearchDevices("", false, false)
+	assert.Nil(err)
 	assert.Equal(DeviceList{iosDevice, androidDevice}, result)
 
 	// search should only return the iphone
-	result = client.SearchDevices("iphone", false, false)
+	mock.enqueue(output, nil)
+	result, err = client.SearchDevices("iphone", false, false)
+	assert.Nil(err)
 	assert.Equal(DeviceList{iosDevice}, result)
 
 	// android filter should only return the android phone
-	result = client.SearchDevices("", true, false)
+	mock.enqueue(output, nil)
+	result, err = client.SearchDevices("", true, false)
+	assert.Nil(err)
 	assert.Equal(DeviceList{androidDevice}, result)
 
 	// ios filter should only return the iphone
-	result = client.SearchDevices("", false, true)
+	mock.enqueue(output, nil)
+	result, err = client.SearchDevices("", false, true)
+	assert.Nil(err)
 	assert.Equal(DeviceList{iosDevice}, result)
+
+	// should fail due to mock error
+	mock.enqueue(nil, errors.New("fake error"))
+	result, err = client.SearchDevices("", false, false)
+	assert.NotNil(err)
+	assert.Nil(result)
 }
 
 func TestWaitForUploadsToSucceed(t *testing.T) {
