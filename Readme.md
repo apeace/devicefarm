@@ -111,8 +111,6 @@ GLOBAL OPTIONS:
 
 ## Limitations, bugs & future work
 
-This is an alpha release for testing. Work is ongoing to stabilize this feature set for version 1.0.
-
 See our [issue tracker](https://github.com/ride/devicefarm/issues) for known bugs, improvements, and maintenance work.
 
 Right now only Android instrumentation tests are supported, and only command-line usage is supported.
