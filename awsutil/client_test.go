@@ -3,6 +3,7 @@ package awsutil
 import (
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/ride/devicefarm/util"
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,14 @@ func mockClient() (*DeviceFarm, *MockClient) {
 	mock := &MockClient{}
 	client := &DeviceFarm{mock, util.NilLogger, nil, false}
 	return client, mock
+}
+
+func TestNewClient(t *testing.T) {
+	assert := assert.New(t)
+	creds := credentials.NewStaticCredentials("foo", "bar", "baz")
+	log := util.NilLogger
+	client := NewClient(creds, log)
+	assert.NotNil(client)
 }
 
 func TestSearchDevices(t *testing.T) {
