@@ -172,6 +172,43 @@ func TestUpdateDevicePool(t *testing.T) {
 	assert.Nil(pool)
 }
 
+func TestDevicePoolMatches(t *testing.T) {
+	assert := assert.New(t)
+	client, _ := mockClient()
+
+	pool := &devicefarm.DevicePool{
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("ARN"),
+				Operator:  aws.String("IN"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+
+	// should match
+	result := client.DevicePoolMatches(pool, []string{"foo"})
+	assert.True(result)
+
+	// should not match
+	result = client.DevicePoolMatches(pool, []string{"foo", "bar"})
+	assert.False(result)
+
+	pool = &devicefarm.DevicePool{
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("FOO"),
+				Operator:  aws.String("BAR"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+
+	// should not match
+	result = client.DevicePoolMatches(pool, []string{"foo"})
+	assert.False(result)
+}
+
 func TestWaitForUploadsToSucceed(t *testing.T) {
 	assert := assert.New(t)
 	client, mock := mockClient()

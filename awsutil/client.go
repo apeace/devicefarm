@@ -109,20 +109,18 @@ func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []strin
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) (bool, error) {
-	val, err := json.Marshal(arns)
-	if err != nil {
-		return false, err
-	}
+func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) bool {
+	// there will never be an error marshalling a simple slice of strings
+	val, _ := json.Marshal(arns)
 	for _, rule := range pool.Rules {
 		if *rule.Attribute != "ARN" || *rule.Operator != "IN" {
-			return false, nil
+			return false
 		}
 		if *rule.Value != string(val) {
-			return false, nil
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (string, error) {

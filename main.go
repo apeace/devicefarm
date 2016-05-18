@@ -159,10 +159,7 @@ func getDevicePool(c *cli.Context) *devicefarm.DevicePool {
 		}
 	}
 
-	matches, err := client.DevicePoolMatches(matchingPool, arns)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	matches := client.DevicePoolMatches(matchingPool, arns)
 	if !matches {
 		log.Println("...updating")
 		matchingPool, err = client.UpdateDevicePool(matchingPool, arns)
