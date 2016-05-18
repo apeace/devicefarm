@@ -56,17 +56,6 @@ func TestInit(t *testing.T) {
 	assert.Nil(err)
 }
 
-func TestDevicesLookup(t *testing.T) {
-	assert := assert.New(t)
-	client, _ := mockClient(t)
-	lookup := client.DevicesLookup()
-	assert.Equal(len(lookup), 4)
-	assert.Equal(lookup["Samsung Galaxy S3"], androidDevice)
-	assert.Equal(lookup["arn123"], androidDevice)
-	assert.Equal(lookup["Apple iPhone 6S"], iosDevice)
-	assert.Equal(lookup["arn456"], iosDevice)
-}
-
 func TestSearchDevices(t *testing.T) {
 	assert := assert.New(t)
 	client, _ := mockClient(t)

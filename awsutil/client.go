@@ -50,16 +50,6 @@ func (df *DeviceFarm) Init() (err error) {
 	return
 }
 
-func (df *DeviceFarm) DevicesLookup() map[string]*devicefarm.Device {
-	allDevices := df.allDevicesCache
-	lookup := map[string]*devicefarm.Device{}
-	for _, device := range allDevices {
-		lookup[*device.Name] = device
-		lookup[*device.Arn] = device
-	}
-	return lookup
-}
-
 func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices DeviceList) {
 	allDevices := df.allDevicesCache
 	devices = DeviceList{}
