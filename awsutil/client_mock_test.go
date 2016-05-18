@@ -426,8 +426,18 @@ func (client *MockClient) UpdateDevicePoolRequest(*devicefarm.UpdateDevicePoolIn
 	panic("Not implemented")
 }
 
-func (client *MockClient) UpdateDevicePool(*devicefarm.UpdateDevicePoolInput) (*devicefarm.UpdateDevicePoolOutput, error) {
-	panic("Not implemented")
+func (client *MockClient) UpdateDevicePool(input *devicefarm.UpdateDevicePoolInput) (*devicefarm.UpdateDevicePoolOutput, error) {
+	client.input(input)
+	response := client.dequeue()
+	var out *devicefarm.UpdateDevicePoolOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.UpdateDevicePoolOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) UpdateProjectRequest(*devicefarm.UpdateProjectInput) (*request.Request, *devicefarm.UpdateProjectOutput) {

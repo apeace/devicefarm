@@ -89,10 +89,8 @@ func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (
 }
 
 func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []string) (*devicefarm.DevicePool, error) {
-	val, err := json.Marshal(arns)
-	if err != nil {
-		return nil, err
-	}
+	// there will never be an error marshalling a simple slice of strings
+	val, _ := json.Marshal(arns)
 	params := &devicefarm.UpdateDevicePoolInput{
 		Arn:  pool.Arn,
 		Name: pool.Name,

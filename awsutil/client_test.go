@@ -131,6 +131,47 @@ func TestCreateDevicePool(t *testing.T) {
 	assert.Nil(pool)
 }
 
+func TestUpdateDevicePool(t *testing.T) {
+	assert := assert.New(t)
+	client, mock := mockClient()
+
+	// enqueue mock device pool output
+	pool := &devicefarm.DevicePool{
+		Arn:  aws.String("poolarn"),
+		Name: aws.String("poolname"),
+	}
+	output := &devicefarm.UpdateDevicePoolOutput{
+		DevicePool: pool,
+	}
+	mock.enqueue(output, nil)
+
+	// should succeed and return device pool
+	updatedPool, err := client.UpdateDevicePool(pool, []string{"foo"})
+	assert.Nil(err)
+	assert.Equal(*pool, *updatedPool)
+
+	// check input given to mock.UpdateDevicePool()
+	expectedInput := devicefarm.UpdateDevicePoolInput{
+		Arn:  aws.String("poolarn"),
+		Name: aws.String("poolname"),
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("ARN"),
+				Operator:  aws.String("IN"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+	actualInput := (mock.Inputs()[0][0]).(*devicefarm.UpdateDevicePoolInput)
+	assert.Equal(expectedInput, *actualInput)
+
+	// should fail
+	mock.enqueue(nil, errors.New("fake error"))
+	pool, err = client.UpdateDevicePool(pool, []string{"foo"})
+	assert.NotNil(err)
+	assert.Nil(pool)
+}
+
 func TestWaitForUploadsToSucceed(t *testing.T) {
 	assert := assert.New(t)
 	client, mock := mockClient()
