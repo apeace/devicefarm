@@ -21,76 +21,197 @@ var iosDevice *devicefarm.Device = &devicefarm.Device{
 	Arn:      aws.String("arn456"),
 }
 
-func mockClient(t *testing.T) (*DeviceFarm, *MockClient) {
-	// mock client and ListDevicesOutput
+func mockClient() (*DeviceFarm, *MockClient) {
 	mock := &MockClient{}
 	client := &DeviceFarm{mock, util.NilLogger, nil, false}
-	output := &devicefarm.ListDevicesOutput{}
-
-	// add both devices and enqueue mock output
-	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
-	mock.enqueue(output, nil)
-
-	// init should succeed
-	err := client.Init()
-	assert.Nil(t, err)
-
 	return client, mock
-}
-
-func TestInit(t *testing.T) {
-	assert := assert.New(t)
-
-	// test error case
-	mock := &MockClient{}
-	client := &DeviceFarm{mock, util.NilLogger, nil, false}
-	mock.enqueue(nil, errors.New("Fake error"))
-	err := client.Init()
-	assert.NotNil(err)
-
-	// test success case
-	client, _ = mockClient(t)
-
-	// init should succeed another time
-	err = client.Init()
-	assert.Nil(err)
-}
-
-func TestDevicesLookup(t *testing.T) {
-	assert := assert.New(t)
-	client, _ := mockClient(t)
-	lookup := client.DevicesLookup()
-	assert.Equal(len(lookup), 4)
-	assert.Equal(lookup["Samsung Galaxy S3"], androidDevice)
-	assert.Equal(lookup["arn123"], androidDevice)
-	assert.Equal(lookup["Apple iPhone 6S"], iosDevice)
-	assert.Equal(lookup["arn456"], iosDevice)
 }
 
 func TestSearchDevices(t *testing.T) {
 	assert := assert.New(t)
-	client, _ := mockClient(t)
+	client, mock := mockClient()
+
+	// enqueue mock output with two devices
+	output := &devicefarm.ListDevicesOutput{}
+	output.Devices = []*devicefarm.Device{androidDevice, iosDevice}
+	mock.enqueue(output, nil)
 
 	// blank search should return both devices, sorted
-	result := client.SearchDevices("", false, false)
+	result, err := client.SearchDevices("", false, false)
+	assert.Nil(err)
 	assert.Equal(DeviceList{iosDevice, androidDevice}, result)
 
 	// search should only return the iphone
-	result = client.SearchDevices("iphone", false, false)
+	mock.enqueue(output, nil)
+	result, err = client.SearchDevices("iphone", false, false)
+	assert.Nil(err)
 	assert.Equal(DeviceList{iosDevice}, result)
 
 	// android filter should only return the android phone
-	result = client.SearchDevices("", true, false)
+	mock.enqueue(output, nil)
+	result, err = client.SearchDevices("", true, false)
+	assert.Nil(err)
 	assert.Equal(DeviceList{androidDevice}, result)
 
 	// ios filter should only return the iphone
-	result = client.SearchDevices("", false, true)
+	mock.enqueue(output, nil)
+	result, err = client.SearchDevices("", false, true)
+	assert.Nil(err)
 	assert.Equal(DeviceList{iosDevice}, result)
+
+	// should fail due to mock error
+	mock.enqueue(nil, errors.New("fake error"))
+	result, err = client.SearchDevices("", false, false)
+	assert.NotNil(err)
+	assert.Nil(result)
+}
+
+func TestListDevicePools(t *testing.T) {
+	assert := assert.New(t)
+	client, mock := mockClient()
+
+	// should succeed
+	output := &devicefarm.ListDevicePoolsOutput{
+		DevicePools: []*devicefarm.DevicePool{
+			&devicefarm.DevicePool{
+				Arn:         aws.String("foo"),
+				Description: aws.String("foo"),
+				Name:        aws.String("foo"),
+			},
+		},
+	}
+	mock.enqueue(output, nil)
+	pools, err := client.ListDevicePools("foo")
+	assert.Nil(err)
+	assert.Equal(output.DevicePools, pools)
+
+	// should fail
+	mock.enqueue(nil, errors.New("fake error"))
+	pools, err = client.ListDevicePools("foo")
+	assert.NotNil(err)
+	assert.Nil(pools)
+}
+
+func TestCreateDevicePool(t *testing.T) {
+	assert := assert.New(t)
+	client, mock := mockClient()
+
+	// enqueue mock device pool output
+	output := &devicefarm.CreateDevicePoolOutput{
+		DevicePool: &devicefarm.DevicePool{
+			Arn: aws.String("poolarn"),
+		},
+	}
+	mock.enqueue(output, nil)
+
+	// should succeed and return device pool
+	pool, err := client.CreateDevicePool("arn", "name", []string{"foo"})
+	assert.Nil(err)
+	assert.Equal(*output.DevicePool, *pool)
+
+	// check input given to mock.CreateDevicePool()
+	expectedInput := devicefarm.CreateDevicePoolInput{
+		ProjectArn: aws.String("arn"),
+		Name:       aws.String("name"),
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("ARN"),
+				Operator:  aws.String("IN"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+	actualInput := (mock.Inputs()[0][0]).(*devicefarm.CreateDevicePoolInput)
+	assert.Equal(expectedInput, *actualInput)
+
+	// should fail
+	mock.enqueue(nil, errors.New("fake error"))
+	pool, err = client.CreateDevicePool("arn", "name", []string{"foo"})
+	assert.NotNil(err)
+	assert.Nil(pool)
+}
+
+func TestUpdateDevicePool(t *testing.T) {
+	assert := assert.New(t)
+	client, mock := mockClient()
+
+	// enqueue mock device pool output
+	pool := &devicefarm.DevicePool{
+		Arn:  aws.String("poolarn"),
+		Name: aws.String("poolname"),
+	}
+	output := &devicefarm.UpdateDevicePoolOutput{
+		DevicePool: pool,
+	}
+	mock.enqueue(output, nil)
+
+	// should succeed and return device pool
+	updatedPool, err := client.UpdateDevicePool(pool, []string{"foo"})
+	assert.Nil(err)
+	assert.Equal(*pool, *updatedPool)
+
+	// check input given to mock.UpdateDevicePool()
+	expectedInput := devicefarm.UpdateDevicePoolInput{
+		Arn:  aws.String("poolarn"),
+		Name: aws.String("poolname"),
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("ARN"),
+				Operator:  aws.String("IN"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+	actualInput := (mock.Inputs()[0][0]).(*devicefarm.UpdateDevicePoolInput)
+	assert.Equal(expectedInput, *actualInput)
+
+	// should fail
+	mock.enqueue(nil, errors.New("fake error"))
+	pool, err = client.UpdateDevicePool(pool, []string{"foo"})
+	assert.NotNil(err)
+	assert.Nil(pool)
+}
+
+func TestDevicePoolMatches(t *testing.T) {
+	assert := assert.New(t)
+	client, _ := mockClient()
+
+	pool := &devicefarm.DevicePool{
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("ARN"),
+				Operator:  aws.String("IN"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+
+	// should match
+	result := client.DevicePoolMatches(pool, []string{"foo"})
+	assert.True(result)
+
+	// should not match
+	result = client.DevicePoolMatches(pool, []string{"foo", "bar"})
+	assert.False(result)
+
+	pool = &devicefarm.DevicePool{
+		Rules: []*devicefarm.Rule{
+			{
+				Attribute: aws.String("FOO"),
+				Operator:  aws.String("BAR"),
+				Value:     aws.String("[\"foo\"]"),
+			},
+		},
+	}
+
+	// should not match
+	result = client.DevicePoolMatches(pool, []string{"foo"})
+	assert.False(result)
 }
 
 func TestWaitForUploadsToSucceed(t *testing.T) {
 	assert := assert.New(t)
-	client, mock := mockClient(t)
+	client, mock := mockClient()
 
 	// should succeed immediately
 	output := &devicefarm.GetUploadOutput{

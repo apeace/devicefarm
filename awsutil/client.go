@@ -23,46 +23,23 @@ type DeviceFarm struct {
 	initialized     bool
 }
 
-func NewClient(creds *credentials.Credentials, log util.Logger) (df *DeviceFarm, err error) {
+func NewClient(creds *credentials.Credentials, log util.Logger) *DeviceFarm {
 	sess := session.New(&aws.Config{
 		Region:      aws.String("us-west-2"),
 		Credentials: creds,
 	})
 	client := devicefarm.New(sess)
-	df = &DeviceFarm{client, log, nil, false}
-	err = df.Init()
-	return
+	return &DeviceFarm{client, log, nil, false}
 }
 
-func (df *DeviceFarm) Init() (err error) {
-	if df.initialized {
-		return
-	}
+func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices DeviceList, err error) {
 	params := &devicefarm.ListDevicesInput{}
 	r, err := df.Client.ListDevices(params)
 	if err != nil {
 		return
 	}
-	list := DeviceList(r.Devices)
-	list.Sort()
-	df.allDevicesCache = list
-	df.initialized = true
-	return
-}
-
-func (df *DeviceFarm) DevicesLookup() map[string]*devicefarm.Device {
-	allDevices := df.allDevicesCache
-	lookup := map[string]*devicefarm.Device{}
-	for _, device := range allDevices {
-		lookup[*device.Name] = device
-		lookup[*device.Arn] = device
-	}
-	return lookup
-}
-
-func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly bool) (devices DeviceList) {
-	allDevices := df.allDevicesCache
-	devices = DeviceList{}
+	allDevices := DeviceList(r.Devices)
+	allDevices.Sort()
 	search = strings.ToLower(search)
 	doSearch := len(search) > 0
 	for _, device := range allDevices {
@@ -91,10 +68,8 @@ func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, err
 }
 
 func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (*devicefarm.DevicePool, error) {
-	val, err := json.Marshal(arns)
-	if err != nil {
-		return nil, err
-	}
+	// there will never be an error marshalling a simple slice of strings
+	val, _ := json.Marshal(arns)
 	params := &devicefarm.CreateDevicePoolInput{
 		ProjectArn: aws.String(arn),
 		Name:       aws.String(name),
@@ -114,10 +89,8 @@ func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (
 }
 
 func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []string) (*devicefarm.DevicePool, error) {
-	val, err := json.Marshal(arns)
-	if err != nil {
-		return nil, err
-	}
+	// there will never be an error marshalling a simple slice of strings
+	val, _ := json.Marshal(arns)
 	params := &devicefarm.UpdateDevicePoolInput{
 		Arn:  pool.Arn,
 		Name: pool.Name,
@@ -136,20 +109,18 @@ func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []strin
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) (bool, error) {
-	val, err := json.Marshal(arns)
-	if err != nil {
-		return false, err
-	}
+func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) bool {
+	// there will never be an error marshalling a simple slice of strings
+	val, _ := json.Marshal(arns)
 	for _, rule := range pool.Rules {
 		if *rule.Attribute != "ARN" || *rule.Operator != "IN" {
-			return false, nil
+			return false
 		}
 		if *rule.Value != string(val) {
-			return false, nil
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (string, error) {

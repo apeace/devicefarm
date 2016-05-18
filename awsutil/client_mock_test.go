@@ -21,25 +21,47 @@ import (
 )
 
 type MockClient struct {
-	responses [][]interface{}
+	inputs  [][]interface{}
+	outputs [][]interface{}
 }
 
 func (client *MockClient) enqueue(values ...interface{}) {
-	client.responses = append(client.responses, values)
+	client.outputs = append(client.outputs, values)
 }
 
 func (client *MockClient) dequeue() []interface{} {
-	response := client.responses[0]
-	client.responses = client.responses[1:]
+	if len(client.outputs) == 0 {
+		panic("Nothing in MockClient queue")
+	}
+	response := client.outputs[0]
+	client.outputs = client.outputs[1:]
 	return response
+}
+
+func (client *MockClient) input(args ...interface{}) {
+	client.inputs = append(client.inputs, args)
+}
+
+func (client *MockClient) Inputs() [][]interface{} {
+	return client.inputs[:]
 }
 
 func (client *MockClient) CreateDevicePoolRequest(*devicefarm.CreateDevicePoolInput) (*request.Request, *devicefarm.CreateDevicePoolOutput) {
 	panic("Not implemented")
 }
 
-func (client *MockClient) CreateDevicePool(*devicefarm.CreateDevicePoolInput) (*devicefarm.CreateDevicePoolOutput, error) {
-	panic("Not implemented")
+func (client *MockClient) CreateDevicePool(input *devicefarm.CreateDevicePoolInput) (*devicefarm.CreateDevicePoolOutput, error) {
+	client.input(input)
+	response := client.dequeue()
+	var out *devicefarm.CreateDevicePoolOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.CreateDevicePoolOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) CreateProjectRequest(*devicefarm.CreateProjectInput) (*request.Request, *devicefarm.CreateProjectOutput) {
@@ -178,7 +200,8 @@ func (client *MockClient) GetUploadRequest(*devicefarm.GetUploadInput) (*request
 	panic("Not implemented")
 }
 
-func (client *MockClient) GetUpload(*devicefarm.GetUploadInput) (*devicefarm.GetUploadOutput, error) {
+func (client *MockClient) GetUpload(input *devicefarm.GetUploadInput) (*devicefarm.GetUploadOutput, error) {
+	client.input(input)
 	response := client.dequeue()
 	var out *devicefarm.GetUploadOutput
 	if response[0] != nil {
@@ -207,8 +230,18 @@ func (client *MockClient) ListDevicePoolsRequest(*devicefarm.ListDevicePoolsInpu
 	panic("Not implemented")
 }
 
-func (client *MockClient) ListDevicePools(*devicefarm.ListDevicePoolsInput) (*devicefarm.ListDevicePoolsOutput, error) {
-	panic("Not implemented")
+func (client *MockClient) ListDevicePools(input *devicefarm.ListDevicePoolsInput) (*devicefarm.ListDevicePoolsOutput, error) {
+	client.input(input)
+	response := client.dequeue()
+	var out *devicefarm.ListDevicePoolsOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.ListDevicePoolsOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) ListDevicePoolsPages(*devicefarm.ListDevicePoolsInput, func(*devicefarm.ListDevicePoolsOutput, bool) bool) error {
@@ -219,7 +252,8 @@ func (client *MockClient) ListDevicesRequest(*devicefarm.ListDevicesInput) (*req
 	panic("Not implemented")
 }
 
-func (client *MockClient) ListDevices(*devicefarm.ListDevicesInput) (*devicefarm.ListDevicesOutput, error) {
+func (client *MockClient) ListDevices(input *devicefarm.ListDevicesInput) (*devicefarm.ListDevicesOutput, error) {
+	client.input(input)
 	response := client.dequeue()
 	var out *devicefarm.ListDevicesOutput
 	if response[0] != nil {
@@ -392,8 +426,18 @@ func (client *MockClient) UpdateDevicePoolRequest(*devicefarm.UpdateDevicePoolIn
 	panic("Not implemented")
 }
 
-func (client *MockClient) UpdateDevicePool(*devicefarm.UpdateDevicePoolInput) (*devicefarm.UpdateDevicePoolOutput, error) {
-	panic("Not implemented")
+func (client *MockClient) UpdateDevicePool(input *devicefarm.UpdateDevicePoolInput) (*devicefarm.UpdateDevicePoolOutput, error) {
+	client.input(input)
+	response := client.dequeue()
+	var out *devicefarm.UpdateDevicePoolOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.UpdateDevicePoolOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) UpdateProjectRequest(*devicefarm.UpdateProjectInput) (*request.Request, *devicefarm.UpdateProjectOutput) {
