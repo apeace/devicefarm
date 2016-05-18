@@ -27,7 +27,9 @@ mkdir -p dist
 gox \
     -ldflags "-X main.Version $TAG" \
     -output "dist/devicefarm_{{.OS}}_{{.Arch}}" \
+    -osarch "darwin/386" \
     -osarch "darwin/amd64" \
+    -osarch "linux/386" \
     -osarch "linux/amd64"
 
 ghr -t $GITHUB_TOKEN -u ride -r devicefarm $TAG dist/
