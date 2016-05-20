@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/aws/aws-sdk-go/service/devicefarm/devicefarmiface"
 	"github.com/ride/devicefarm/util"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -123,6 +124,21 @@ func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, deviceArns 
 	return true
 }
 
+func (df *DeviceFarm) UploadToS3(s3Url string, bytes io.Reader) (err error) {
+	req, err := http.NewRequest("PUT", s3Url, bytes)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	return
+}
+
 func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (string, error) {
 	// open file and read into io.ReaderSeeker
 	// to avoid 501 Not Implemented Transfer-Encoding
@@ -153,20 +169,9 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 	}
 	uploadUrl := *rApp.Upload.Url
 
-	// upload to S3
-	req, err := http.NewRequest("PUT", uploadUrl, fileBytes)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/octet-stream")
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
+	err = df.UploadToS3(uploadUrl, fileBytes)
 
-	return *rApp.Upload.Arn, nil
+	return *rApp.Upload.Arn, err
 }
 
 func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {

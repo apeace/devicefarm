@@ -7,6 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/ride/devicefarm/util"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -216,6 +220,34 @@ func TestDevicePoolMatches(t *testing.T) {
 	// should not match
 	result = client.DevicePoolMatches(pool, []string{"foo"})
 	assert.False(result)
+}
+
+func TestUploadToS3(t *testing.T) {
+	assert := assert.New(t)
+	client, _ := mockClient()
+	//done := make(chan bool)
+
+	// listen on random port
+	ln, err := net.Listen("tcp", "localhost:0")
+	assert.Nil(err)
+	url := "http://" + ln.Addr().String() + "/"
+
+	// return "foo" and shut down server for any request
+	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
+		assert.Equal(req.Method, http.MethodPut)
+		body, err := ioutil.ReadAll(req.Body)
+		assert.Nil(err)
+		assert.Equal("foo", string(body))
+		res.WriteHeader(http.StatusCreated)
+		ln.Close()
+	})
+	go func() {
+		http.Serve(ln, nil)
+	}()
+
+	// send request
+	err = client.UploadToS3(url, strings.NewReader("foo"))
+	assert.Nil(err)
 }
 
 func TestWaitForUploadsToSucceed(t *testing.T) {
