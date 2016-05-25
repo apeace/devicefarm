@@ -1,42 +1,67 @@
 # DeviceFarm
 
+A command-line tool for using [AWS Device Farm](https://aws.amazon.com/device-farm/).
+Key features:
+
+ * Easily manage device pools through a config file in your repo.
+ * Run your build and upload artifacts & tests to Device Farm.
+ * Gives you a URL to jump straight to your test results in the AWS Console.
+
 ## Install
 
-Go to [Releases](https://github.com/ride/devicefarm/releases/) and download the latest binary for your platform. Then
-move it to `/usr/local/bin/devicefarm` and run:
+`devicefarm` is distributed as a binary. Simply go to
+[Releases](https://github.com/ride/devicefarm/releases/) and download the
+latest binary for your platform.
+
+Example for OS X:
 
 ```
+# first, download the latest release. then...
+mv ~/Downloads/devicefarm_darwin_amd64 /usr/local/bin/devicefarm
 chmod +x /usr/local/bin/devicefarm
-cp ~/Dropbox\ \(Ride\)/Engineering/DeviceFarm/devicefarm.json ~/.devicefarm.json
+
+# that's it! you now have devicefarm
+devicefarm --version
 ```
 
 ## Setup
 
-You should have a `devicefarm.yml` config in your repo, [like this one](./config/testdata/config.yml).
+**First,** you will need an AWS user who has permission to access Device Farm.
+It is recommended to setup a separate user for this purpose. Once you have that,
+create a file `~/.devicefarm.json` with contents like this:
+
+```
+{
+  "AWS_ACCESS_KEY_ID": "... your key ...",
+  "AWS_SECRET_ACCESS_KEY": "... your secret ..."
+}
+```
+
+**Second,** you should setup a `devicefarm.yml` config in your repo,
+[like this one](./config/testdata/config.yml).
 
 ## Features
 
-Only Android instrumentation tests are supported at the moment.
+Only Android instrumentation tests are supported at the moment. See
+[future work](#limitations-bugs--future-work).
 
-### Run UI tests on DeviceFarm
-
-You will need [access to AWS](https://github.com/ride/devops/blob/master/docs/aws-access.md) to view the results of the tests, view screenshots, etc.
+### Run instrumentation tests on Device Farm
 
 ```bash
 # go into your android project
-$ cd /path/to/ride-app-android/
+$ cd /path/to/android-app/
 
 # run tests. the output is a URL you can visit to view your test results.
 $ devicefarm run
->> Dir: /Users/apeace/code/MarkdownPreview, Config: devicefarm.yml, Branch: devicefarm
+>> Dir: /path/to/android-app/, Config: devicefarm.yml, Branch: devicefarm
 >> Running build... (silencing output)
 $ ./gradlew assembleDebug
 $ ./gradlew assembleAndroidTest
 >> Build complete
 >> Device Pool: everything (9 devices)
 >> Uploading files...
-/Users/apeace/code/MarkdownPreview/app/build/outputs/apk/app-debug.apk
-/Users/apeace/code/MarkdownPreview/app/build/outputs/apk/app-debug-androidTest-unaligned.apk
+/path/to/android-app/app/build/outputs/apk/app-debug.apk
+/path/to/android-app/app/build/outputs/apk/app-debug-androidTest-unaligned.apk
 >> Waiting for files to be processed...
 >> Creating test run...
 https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/projects/1124416c-bfb2-4334-817c-e211ecef7dc0/runs/a07ca17f-d8ec-4adf-8e36-dc776b847705
@@ -44,11 +69,13 @@ https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/proje
 
 ### Update device pools
 
-If you update your device pools in `devicefarm.yml` you can run tests on different sets of devices. See "List devices" below for how to find device names.
+If you update your device pools in `devicefarm.yml` you can run tests on
+different sets of devices. See "List devices" below for how to find device
+identifiers.
 
 ```bash
 # go into your android project
-$ cd /path/to/ride-app-android/
+$ cd /path/to/android-app/
 
 # if you checkout a branch, device pools will be tied only to that branch
 $ git checkout -b my-test-branch
@@ -111,14 +138,17 @@ GLOBAL OPTIONS:
 
 ## Limitations, bugs & future work
 
-See our [issue tracker](https://github.com/ride/devicefarm/issues) for known bugs, improvements, and maintenance work.
+See our [issue tracker](https://github.com/ride/devicefarm/issues) for known
+bugs, improvements, and maintenance work.
 
-Right now only Android instrumentation tests are supported, and only command-line usage is supported.
+Right now only Android instrumentation tests are supported. As part of our
+[2.0 Milestone](https://github.com/ride/devicefarm/milestones/2.0) we'll be
+adding:
 
-Future work:
-
- * v1.x - Integrate with Github.
- * v2.0 - Rework `devicefarm.yml` format, introduce support for iOS and additional test types.
+ * Support for all test types (including iOS and web).
+ * Commands to help setup AWS credentials and `devicefarm.yml` config.
+ * An `update` command to easily get the latest version.
+ * Polishing existing commands and config to make them easier to use.
 
 ## Docs
 
