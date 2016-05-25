@@ -32,6 +32,6 @@ gox \
     -osarch "linux/386" \
     -osarch "linux/amd64"
 
-ghr -t $GITHUB_TOKEN -u ride -r devicefarm $TAG dist/
+ghr -t $GITHUB_TOKEN -u ride -r devicefarm --draft $TAG dist/
 
 echo ">> Done"
