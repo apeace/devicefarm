@@ -28,7 +28,7 @@ func init() {
 	var err error
 	currentUser, err = user.Current()
 	if err != nil {
-		log.Fatalln("Could not get current user")
+		log.Fatalln("Could not get current user", err)
 	}
 	defaultAwsConfigFile = filepath.Join(currentUser.HomeDir, ".devicefarm.json")
 }
