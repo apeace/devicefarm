@@ -152,6 +152,7 @@ func (df *DeviceFarm) fileReaderSeeker(filename string) (r io.ReadSeeker, err er
 	defer file.Close()
 	fileInfo, err := file.Stat()
 	if err != nil {
+		// TODO: Not sure how to add test coverage for this line
 		return
 	}
 	fileSize := fileInfo.Size()
