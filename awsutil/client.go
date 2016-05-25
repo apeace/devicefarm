@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/devicefarm"
 	"github.com/aws/aws-sdk-go/service/devicefarm/devicefarmiface"
 	"github.com/ride/devicefarm/util"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -58,8 +59,8 @@ func (df *DeviceFarm) SearchDevices(search string, androidOnly bool, iosOnly boo
 	return
 }
 
-func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, error) {
-	params := &devicefarm.ListDevicePoolsInput{Arn: aws.String(arn)}
+func (df *DeviceFarm) ListDevicePools(projectArn string) ([]*devicefarm.DevicePool, error) {
+	params := &devicefarm.ListDevicePoolsInput{Arn: aws.String(projectArn)}
 	r, err := df.Client.ListDevicePools(params)
 	if err != nil {
 		return nil, err
@@ -67,11 +68,11 @@ func (df *DeviceFarm) ListDevicePools(arn string) ([]*devicefarm.DevicePool, err
 	return r.DevicePools, nil
 }
 
-func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (*devicefarm.DevicePool, error) {
+func (df *DeviceFarm) CreateDevicePool(projectArn string, name string, deviceArns []string) (*devicefarm.DevicePool, error) {
 	// there will never be an error marshalling a simple slice of strings
-	val, _ := json.Marshal(arns)
+	val, _ := json.Marshal(deviceArns)
 	params := &devicefarm.CreateDevicePoolInput{
-		ProjectArn: aws.String(arn),
+		ProjectArn: aws.String(projectArn),
 		Name:       aws.String(name),
 		Rules: []*devicefarm.Rule{
 			{
@@ -88,9 +89,9 @@ func (df *DeviceFarm) CreateDevicePool(arn string, name string, arns []string) (
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []string) (*devicefarm.DevicePool, error) {
+func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, deviceArns []string) (*devicefarm.DevicePool, error) {
 	// there will never be an error marshalling a simple slice of strings
-	val, _ := json.Marshal(arns)
+	val, _ := json.Marshal(deviceArns)
 	params := &devicefarm.UpdateDevicePoolInput{
 		Arn:  pool.Arn,
 		Name: pool.Name,
@@ -109,9 +110,9 @@ func (df *DeviceFarm) UpdateDevicePool(pool *devicefarm.DevicePool, arns []strin
 	return r.DevicePool, nil
 }
 
-func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []string) bool {
+func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, deviceArns []string) bool {
 	// there will never be an error marshalling a simple slice of strings
-	val, _ := json.Marshal(arns)
+	val, _ := json.Marshal(deviceArns)
 	for _, rule := range pool.Rules {
 		if *rule.Attribute != "ARN" || *rule.Operator != "IN" {
 			return false
@@ -123,23 +124,45 @@ func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, arns []stri
 	return true
 }
 
-func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (string, error) {
-	// open file and read into io.ReaderSeeker
-	// to avoid 501 Not Implemented Transfer-Encoding
+func (df *DeviceFarm) UploadToS3(s3Url string, bytes io.ReadSeeker) (err error) {
+	req, err := http.NewRequest("PUT", s3Url, bytes)
+	if err != nil {
+		// TODO: Not sure how to add test coverage for this line
+		return
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	return
+}
+
+// fileReaderSeeker reads a file into an io.ReadSeeker, see:
+// https://github.com/aws/aws-sdk-go/issues/142
+// https://github.com/aws/aws-sdk-go/issues/337
+// TODO: Get rid of this crap if possible
+func (df *DeviceFarm) fileReaderSeeker(filename string) (r io.ReadSeeker, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return "", err
+		return
 	}
 	defer file.Close()
 	fileInfo, err := file.Stat()
 	if err != nil {
-		return "", err
+		// TODO: Not sure how to add test coverage for this line
+		return
 	}
 	fileSize := fileInfo.Size()
 	buffer := make([]byte, fileSize)
 	file.Read(buffer)
-	fileBytes := bytes.NewReader(buffer)
+	r = bytes.NewReader(buffer)
+	return
+}
 
+func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (uploadArn string, err error) {
 	// create upload object, get signed S3 URL
 	params := &devicefarm.CreateUploadInput{
 		Name:        aws.String(name),
@@ -149,24 +172,20 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 	}
 	rApp, err := df.Client.CreateUpload(params)
 	if err != nil {
-		return "", err
+		return
 	}
-	uploadUrl := *rApp.Upload.Url
+	signedUrl := *rApp.Upload.Url
 
-	// upload to S3
-	req, err := http.NewRequest("PUT", uploadUrl, fileBytes)
+	// get io.ReadSeeker from file
+	r, err := df.fileReaderSeeker(filename)
 	if err != nil {
-		return "", err
+		return
 	}
-	req.Header.Set("Content-Type", "application/octet-stream")
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
 
-	return *rApp.Upload.Arn, nil
+	err = df.UploadToS3(signedUrl, r)
+	uploadArn = *rApp.Upload.Arn
+
+	return
 }
 
 func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
@@ -185,8 +204,8 @@ func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
 }
 
 func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...string) error {
-	errchan := make(chan error, 1)
-	quitchan := make(chan bool, 1)
+	errchan := make(chan error)
+	quitchan := make(chan bool)
 	go func() {
 		var err error
 		var succeeded bool

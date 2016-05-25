@@ -11,7 +11,7 @@ I am only implementing methods as needed by tests, the rest produce a panic. As 
 from the enqueue() and dequeue() methods, the idea is for tests to enqueue arbitrary values
 which will then be dequeued and returned in FIFO order by methods.
 
-See awsutil_test.go in this directory for usage.
+See client_test.go for usage.
 
 */
 
@@ -76,8 +76,18 @@ func (client *MockClient) CreateUploadRequest(*devicefarm.CreateUploadInput) (*r
 	panic("Not implemented")
 }
 
-func (client *MockClient) CreateUpload(*devicefarm.CreateUploadInput) (*devicefarm.CreateUploadOutput, error) {
-	panic("Not implemented")
+func (client *MockClient) CreateUpload(input *devicefarm.CreateUploadInput) (*devicefarm.CreateUploadOutput, error) {
+	client.input(input)
+	response := client.dequeue()
+	var out *devicefarm.CreateUploadOutput
+	if response[0] != nil {
+		out = response[0].(*devicefarm.CreateUploadOutput)
+	}
+	var err error
+	if response[1] != nil {
+		err = response[1].(error)
+	}
+	return out, err
 }
 
 func (client *MockClient) DeleteDevicePoolRequest(*devicefarm.DeleteDevicePoolInput) (*request.Request, *devicefarm.DeleteDevicePoolOutput) {
