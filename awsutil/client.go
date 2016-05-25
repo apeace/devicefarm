@@ -124,7 +124,7 @@ func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, deviceArns 
 	return true
 }
 
-func (df *DeviceFarm) UploadToS3(s3Url string, bytes io.Reader) (err error) {
+func (df *DeviceFarm) UploadToS3(s3Url string, bytes io.ReadSeeker) (err error) {
 	req, err := http.NewRequest("PUT", s3Url, bytes)
 	if err != nil {
 		// TODO: Not sure how to add test coverage for this line
@@ -140,23 +140,28 @@ func (df *DeviceFarm) UploadToS3(s3Url string, bytes io.Reader) (err error) {
 	return
 }
 
-func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (string, error) {
-	// open file and read into io.ReaderSeeker
-	// to avoid 501 Not Implemented Transfer-Encoding
+// fileReaderSeeker reads a file into an io.ReadSeeker, see:
+// https://github.com/aws/aws-sdk-go/issues/142
+// https://github.com/aws/aws-sdk-go/issues/337
+// TODO: Get rid of this crap if possible
+func (df *DeviceFarm) fileReaderSeeker(filename string) (r io.ReadSeeker, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return "", err
+		return
 	}
 	defer file.Close()
 	fileInfo, err := file.Stat()
 	if err != nil {
-		return "", err
+		return
 	}
 	fileSize := fileInfo.Size()
 	buffer := make([]byte, fileSize)
 	file.Read(buffer)
-	fileBytes := bytes.NewReader(buffer)
+	r = bytes.NewReader(buffer)
+	return
+}
 
+func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string) (uploadArn string, err error) {
 	// create upload object, get signed S3 URL
 	params := &devicefarm.CreateUploadInput{
 		Name:        aws.String(name),
@@ -166,13 +171,20 @@ func (df *DeviceFarm) CreateUpload(projectArn, filename, uploadType, name string
 	}
 	rApp, err := df.Client.CreateUpload(params)
 	if err != nil {
-		return "", err
+		return
 	}
-	uploadUrl := *rApp.Upload.Url
+	signedUrl := *rApp.Upload.Url
 
-	err = df.UploadToS3(uploadUrl, fileBytes)
+	// get io.ReadSeeker from file
+	r, err := df.fileReaderSeeker(filename)
+	if err != nil {
+		return
+	}
 
-	return *rApp.Upload.Arn, err
+	err = df.UploadToS3(signedUrl, r)
+	uploadArn = *rApp.Upload.Arn
+
+	return
 }
 
 func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
