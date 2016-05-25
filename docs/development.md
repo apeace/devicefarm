@@ -1,6 +1,7 @@
 # Development
 
-This doc is for **developers making changes to this repo**. If you are an end-user (e.g. a mobile developer) you want the [Readme](../Readme.md).
+This doc is for **developers making changes to this repo**. If you are an
+end-user (e.g. a mobile developer) you want the [Readme](../Readme.md).
 
 ## Dev setup
 
@@ -65,4 +66,11 @@ git add --all vendor/
 
 ## Releasing
 
-Just push a tag. Circle will create the release on Github automatically.
+ 1. Push a new tag (use semver).
+ 2. CircleCI will create a release draft on Github automatically.
+ 3. Remove the `darwin` builds from the release. We cannot use darwin builds
+    cross-compiled from linux because of [this issue](https://github.com/golang/go/issues/6376).
+ 3. On an OS X machine, run `./dist.sh` and upload the `darwin` builds to
+    the release.
+ 4. Name the release exactly the same as the tag name.
+ 5. Write a brief release description and publish the release.

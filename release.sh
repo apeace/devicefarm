@@ -2,7 +2,7 @@
 #
 # release.sh
 #
-# Creates a Github release for the current tag.
+# Creates a Github draft release for the current tag.
 # This should be run via ./release.sh from the project root.
 #
 # Requirements:
@@ -12,6 +12,9 @@
 #
 # Optional:
 #  - set CIRCLE_TAG to specify the tag for the release. if unset, it will default to the most recent tag.
+#
+# Note: We should NOT use OS X builds that are cross-compiled from linux.
+# See docs/development.md and this issue for more info: https://github.com/golang/go/issues/6376
 
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -euo pipefail
@@ -22,15 +25,7 @@ TAG=${CIRCLE_TAG:-$(git log --simplify-by-decoration --oneline --pretty=format:"
 
 echo ">> Creating release $TAG"
 
-# build for osx and linux
-mkdir -p dist
-gox \
-    -ldflags "-X main.Version $TAG" \
-    -output "dist/devicefarm_{{.OS}}_{{.Arch}}" \
-    -osarch "darwin/386" \
-    -osarch "darwin/amd64" \
-    -osarch "linux/386" \
-    -osarch "linux/amd64"
+./dist.sh $TAG
 
 ghr -t $GITHUB_TOKEN -u ride -r devicefarm --draft $TAG dist/
 
