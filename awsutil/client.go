@@ -127,6 +127,7 @@ func (df *DeviceFarm) DevicePoolMatches(pool *devicefarm.DevicePool, deviceArns 
 func (df *DeviceFarm) UploadToS3(s3Url string, bytes io.Reader) (err error) {
 	req, err := http.NewRequest("PUT", s3Url, bytes)
 	if err != nil {
+		// TODO: Not sure how to add test coverage for this line
 		return
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")

@@ -225,29 +225,32 @@ func TestDevicePoolMatches(t *testing.T) {
 func TestUploadToS3(t *testing.T) {
 	assert := assert.New(t)
 	client, _ := mockClient()
-	//done := make(chan bool)
 
 	// listen on random port
 	ln, err := net.Listen("tcp", "localhost:0")
 	assert.Nil(err)
+	defer ln.Close()
 	url := "http://" + ln.Addr().String() + "/"
 
-	// return "foo" and shut down server for any request
+	// verify HTTP request
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		assert.Equal(req.Method, http.MethodPut)
 		body, err := ioutil.ReadAll(req.Body)
 		assert.Nil(err)
 		assert.Equal("foo", string(body))
 		res.WriteHeader(http.StatusCreated)
-		ln.Close()
 	})
 	go func() {
 		http.Serve(ln, nil)
 	}()
 
-	// send request
+	// should succeed
 	err = client.UploadToS3(url, strings.NewReader("foo"))
 	assert.Nil(err)
+
+	// should fail because 'fakeurl' does not exist
+	err = client.UploadToS3("fakeurl", nil)
+	assert.NotNil(err)
 }
 
 func TestWaitForUploadsToSucceed(t *testing.T) {
