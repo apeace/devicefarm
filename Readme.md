@@ -153,3 +153,7 @@ adding:
 ## Docs
 
  * [Development](./docs/development.md)
+
+## License
+
+Copyright © 2016 Ride Group, Inc. [MIT](./LICENSE)
