@@ -53,17 +53,7 @@ $ cd /path/to/android-app/
 
 # run tests. the output is a URL you can visit to view your test results.
 $ devicefarm run
->> Dir: /path/to/android-app/, Config: devicefarm.yml, Branch: devicefarm
->> Running build... (silencing output)
-$ ./gradlew assembleDebug
-$ ./gradlew assembleAndroidTest
->> Build complete
->> Device Pool: everything (9 devices)
->> Uploading files...
-/path/to/android-app/app/build/outputs/apk/app-debug.apk
-/path/to/android-app/app/build/outputs/apk/app-debug-androidTest-unaligned.apk
->> Waiting for files to be processed...
->> Creating test run...
+...
 https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/projects/1124416c-bfb2-4334-817c-e211ecef7dc0/runs/a07ca17f-d8ec-4adf-8e36-dc776b847705
 ```
 
@@ -147,7 +137,7 @@ adding:
 
  * Support for all test types (including iOS and web).
  * Commands to help setup AWS credentials and `devicefarm.yml` config.
- * An `update` command to easily get the latest version.
+ * A Homebrew tap so OS X users can install and update using `brew`.
  * Polishing existing commands and config to make them easier to use.
 
 ## Docs
