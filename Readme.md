@@ -9,20 +9,19 @@ Key features:
 
 ## Install
 
-`devicefarm` is distributed as a binary. Simply go to
-[Releases](https://github.com/ride/devicefarm/releases/) and download the
-latest binary for your platform.
-
-Example for OS X:
+For OS X users, we recommend installing via 
+[Homebrew](http://brew.sh/):
 
 ```
-# first, download the latest release. then...
-mv ~/Downloads/devicefarm_darwin_amd64 /usr/local/bin/devicefarm
-chmod +x /usr/local/bin/devicefarm
-
-# that's it! you now have devicefarm
+brew tap ride/devicefarm
+brew install devicefarm
+# all set!
 devicefarm --version
 ```
+
+For other platforms, `devicefarm` is distributed as a binary. Simply go to
+[Releases](https://github.com/ride/devicefarm/releases/) and download the
+latest binary for your platform.
 
 ## Setup
 
