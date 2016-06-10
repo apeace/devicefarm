@@ -90,7 +90,10 @@ func RunAllLog(log Logger, dir string, commands ...string) ([]*CmdOutput, error)
 			break
 		}
 	}
-	return outputs[0 : i+1], err
+	if len(outputs) > 0 {
+		return outputs[0 : i+1], err
+	}
+	return outputs, err
 }
 
 // CmdOutput represents the output of a bash command.

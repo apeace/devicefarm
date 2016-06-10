@@ -67,6 +67,11 @@ func TestRunAll(t *testing.T) {
 	assert.Equal(CmdOutput{"echo Foo", "Foo", nil}, *outputs[0])
 	assert.NotNil(outputs[1].Err)
 	assert.Equal([]string{"$ echo Foo\n", "$ exit 1\n"}, out.Out())
+
+	// run with empty list of commands
+	outputs, err = RunAllLog(log, tmpDir, []string{}...)
+	assert.Nil(err)
+	assert.Equal(0, len(outputs))
 }
 
 func TestCopyFile(t *testing.T) {
