@@ -113,31 +113,40 @@ type BuildManifest struct {
 // override the value in the first manifest.
 func MergeManifests(m1 *BuildManifest, m2 *BuildManifest) *BuildManifest {
 	merged := &BuildManifest{}
-	if len(m2.Steps) > 0 {
+	// build steps
+	switch {
+	case len(m2.Steps) > 0:
 		merged.Steps = m2.Steps[:]
-	} else {
+	case len(m1.Steps) > 0:
 		merged.Steps = m1.Steps[:]
+	case true:
+		merged.Steps = []string{}
 	}
-	if len(m2.Android.Apk) > 0 {
-		merged.Android.Apk = m2.Android.Apk
-	} else {
-		merged.Android.Apk = m1.Android.Apk
+	// device pool
+	// default case will already be empty string
+	switch {
+	case len(m2.DevicePool) > 0:
+		merged.DevicePool = m2.DevicePool
+	case len(m1.DevicePool) > 0:
+		merged.DevicePool = m1.DevicePool
 	}
-	if len(m2.Android.ApkInstrumentation) > 0 {
-		merged.Android.ApkInstrumentation = m2.Android.ApkInstrumentation
-	} else {
-		merged.Android.ApkInstrumentation = m1.Android.ApkInstrumentation
+	// tests
+	cloneTests := func(tests map[string]map[string]string) {
+		merged.Tests = map[string]map[string]string{}
+		for testname, test := range tests {
+			merged.Tests[testname] = map[string]string{}
+			for k, v := range test {
+				merged.Tests[testname][k] = v
+			}
+		}
 	}
-	if len(m2.DevicePool) > 0 {
-		merged.DevicePool = m2.DevicePool[:]
-	} else {
-		merged.DevicePool = m1.DevicePool[:]
-	}
-	if len(m2.Tests) > 0 {
-		// TODO clone?
-		merged.Tests = m2.Tests
-	} else {
-		merged.Tests = m1.Tests
+	switch {
+	case len(m2.Tests) > 0:
+		cloneTests(m2.Tests)
+	case len(m1.Tests) > 0:
+		cloneTests(m1.Tests)
+	case true:
+		cloneTests(map[string]map[string]string{})
 	}
 	return merged
 }

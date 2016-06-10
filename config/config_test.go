@@ -9,53 +9,53 @@ func TestMergeManifests(t *testing.T) {
 	assert := assert.New(t)
 
 	// a complete manifest
-	m1 := BuildManifest{
+	complete := BuildManifest{
 		Steps:      []string{"foo", "bar"},
-		Android:    AndroidConfig{"foo", "bar"},
+		Tests:      map[string]map[string]string{"foo": {"bar": "baz"}},
 		DevicePool: "foo",
 	}
 
-	// m2 should override only Steps
-	m2 := BuildManifest{
+	// should override only Steps
+	override_steps := BuildManifest{
 		Steps: []string{"bar", "foo"},
 	}
-	merged := MergeManifests(&m1, &m2)
+	merged := MergeManifests(&complete, &override_steps)
 	assert.Equal(BuildManifest{
 		Steps:      []string{"bar", "foo"},
-		Android:    AndroidConfig{"foo", "bar"},
+		Tests:      map[string]map[string]string{"foo": {"bar": "baz"}},
 		DevicePool: "foo",
 	}, *merged)
-	// m1 should override everything in m2
-	merged = MergeManifests(&m2, &m1)
-	assert.Equal(m1, *merged)
+	// complete should override everything
+	merged = MergeManifests(&override_steps, &complete)
+	assert.Equal(complete, *merged)
 
-	// m3 should override only Android.Apk
-	m3 := BuildManifest{
-		Android: AndroidConfig{Apk: "bar"},
+	// should override only Tests
+	override_tests := BuildManifest{
+		Tests: map[string]map[string]string{"bar": {"baz": "blah"}},
 	}
-	merged = MergeManifests(&m1, &m3)
+	merged = MergeManifests(&complete, &override_tests)
 	assert.Equal(BuildManifest{
 		Steps:      []string{"foo", "bar"},
-		Android:    AndroidConfig{"bar", "bar"},
+		Tests:      map[string]map[string]string{"bar": {"baz": "blah"}},
 		DevicePool: "foo",
 	}, *merged)
-	// m1 should override everything in m3
-	merged = MergeManifests(&m3, &m1)
-	assert.Equal(m1, *merged)
+	// complete should override everything
+	merged = MergeManifests(&override_tests, &complete)
+	assert.Equal(complete, *merged)
 
-	// m4 should override only DevicePool
-	m4 := BuildManifest{
+	// should override only DevicePool
+	override_devicepool := BuildManifest{
 		DevicePool: "bar",
 	}
-	merged = MergeManifests(&m1, &m4)
+	merged = MergeManifests(&complete, &override_devicepool)
 	assert.Equal(BuildManifest{
 		Steps:      []string{"foo", "bar"},
-		Android:    AndroidConfig{"foo", "bar"},
+		Tests:      map[string]map[string]string{"foo": {"bar": "baz"}},
 		DevicePool: "bar",
 	}, *merged)
-	// m1 should override everything in m4
-	merged = MergeManifests(&m4, &m1)
-	assert.Equal(m1, *merged)
+	// complete should override everything
+	merged = MergeManifests(&override_devicepool, &complete)
+	assert.Equal(complete, *merged)
 }
 
 func TestBuildManifestIsRunnable(t *testing.T) {
