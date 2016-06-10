@@ -38,11 +38,10 @@ devicepool_definitions:
     - +samsung_s5
 
 defaults:
-    tests:
-      instrumentation:
-        type: android_instrumentation
-        app_apk: ./path/to/build.apk
-        instrumentation_apk: ./path/to/instrumentation.apk
+    # this type of android config is now deprecated
+    android:
+      apk: ./path/to/build.apk
+      apk_instrumentation: ./path/to/instrumentation.apk
 
     devicepool: samsung_s5
 

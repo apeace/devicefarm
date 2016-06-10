@@ -63,8 +63,14 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 
 	// a complete manifest, should be runnable
 	m1 := BuildManifest{
-		Steps:      []string{"foo", "bar"},
-		Android:    AndroidConfig{"foo", "bar"},
+		Steps: []string{"foo", "bar"},
+		Tests: map[string]map[string]string{
+			"instrumentation": {
+				"type":                "android_instrumentation",
+				"app_apk":             "./path/to/build.apk",
+				"instrumentation_apk": "./path/to/instrumentation.apk",
+			},
+		},
 		DevicePool: "foo",
 	}
 	runnable, err := m1.IsRunnable()
@@ -73,18 +79,24 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 
 	// a complete manifest missing build steps, should be runnable
 	m2 := BuildManifest{
-		Steps:      []string{},
-		Android:    AndroidConfig{"foo", "bar"},
+		Steps: []string{},
+		Tests: map[string]map[string]string{
+			"instrumentation": {
+				"type":                "android_instrumentation",
+				"app_apk":             "./path/to/build.apk",
+				"instrumentation_apk": "./path/to/instrumentation.apk",
+			},
+		},
 		DevicePool: "foo",
 	}
 	runnable, err = m2.IsRunnable()
 	assert.True(runnable)
 	assert.Nil(err)
 
-	// missing Android.Apk, should NOT be runnable
+	// missing Tests, should NOT be runnable
 	m3 := BuildManifest{
 		Steps:      []string{"foo", "bar"},
-		Android:    AndroidConfig{ApkInstrumentation: "bar"},
+		Tests:      map[string]map[string]string{},
 		DevicePool: "foo",
 	}
 	runnable, err = m3.IsRunnable()
@@ -93,8 +105,14 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 
 	// missing a device pool, should NOT be runnable
 	m4 := BuildManifest{
-		Steps:      []string{"foo", "bar"},
-		Android:    AndroidConfig{"foo", "bar"},
+		Steps: []string{"foo", "bar"},
+		Tests: map[string]map[string]string{
+			"instrumentation": {
+				"type":                "android_instrumentation",
+				"app_apk":             "./path/to/build.apk",
+				"instrumentation_apk": "./path/to/instrumentation.apk",
+			},
+		},
 		DevicePool: "",
 	}
 	runnable, err = m4.IsRunnable()
@@ -150,9 +168,16 @@ func TestNew(t *testing.T) {
 	}
 	defaultBuild := BuildManifest{
 		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
+		Tests: map[string]map[string]string{
+			"instrumentation": {
+				"type":                "android_instrumentation",
+				"app_apk":             "./path/to/build.apk",
+				"instrumentation_apk": "./path/to/instrumentation.apk",
+			},
+		},
 		Android: AndroidConfig{
-			Apk:                "./path/to/build.apk",
-			ApkInstrumentation: "./path/to/instrumentation.apk",
+			Apk:                "",
+			ApkInstrumentation: "",
 		},
 		DevicePool: "samsung_s5",
 	}
@@ -172,8 +197,14 @@ func TestNew(t *testing.T) {
 	// a valid config with no build
 	config, err = New("testdata/config_nobuild.yml")
 	assert.Nil(err)
-
 	expected.Defaults.Steps = []string{}
+	assert.Equal(expected, *config)
+
+	// a valid config using the deprecated android field
+	config, err = New("testdata/config_deprecated.yml")
+	assert.Nil(err)
+	expected.Defaults.Tests["deprecated_auto_instrumentation"] = expected.Defaults.Tests["instrumentation"]
+	delete(expected.Defaults.Tests, "instrumentation")
 	assert.Equal(expected, *config)
 }
 
@@ -246,9 +277,16 @@ func TestConfigBranchManifest(t *testing.T) {
 	// build the expected manifest
 	masterManifest := BuildManifest{
 		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
+		Tests: map[string]map[string]string{
+			"instrumentation": {
+				"type":                "android_instrumentation",
+				"app_apk":             "./path/to/build.apk",
+				"instrumentation_apk": "./path/to/instrumentation.apk",
+			},
+		},
 		Android: AndroidConfig{
-			Apk:                "./path/to/build.apk",
-			ApkInstrumentation: "./path/to/instrumentation.apk",
+			Apk:                "",
+			ApkInstrumentation: "",
 		},
 		DevicePool: "everything",
 	}

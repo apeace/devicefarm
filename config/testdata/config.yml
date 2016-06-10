@@ -42,9 +42,11 @@ defaults:
       - echo "Foo"
       - echo "Bar"
 
-    android:
-      apk: ./path/to/build.apk
-      apk_instrumentation: ./path/to/instrumentation.apk
+    tests:
+      instrumentation:
+        type: android_instrumentation
+        app_apk: ./path/to/build.apk
+        instrumentation_apk: ./path/to/instrumentation.apk
 
     devicepool: samsung_s5
 

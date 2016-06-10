@@ -47,13 +47,24 @@ Here is an annotated example of what a config file should look like:
 	    - echo "Foo"
 	    - echo "Bar"
 
-	  # The location of APK files, after build commands have been run.
-	  android:
-	    apk: ./path/to/build.apk
-	    apk_instrumentation: ./path/to/instrumentation.apk
+	  # The tests you want to run. Each key is a name (e.g. my_instrumentation)
+	  # and the value is a map with type, plus whatever other fields that test
+	  # type needs. TODO: doc for test types.
+	  tests:
+	    my_instrumentation:
+	      type: android_instrumentation
+	      app_apk: ./path/to/build.apk
+	      instrumentation_apk: ./path/to/instrumentation.apk
 
 	  # The device pool name that tests should be run on.
 	  devicepool: samsung_s4
+
+	  # DEPRECATED. Being removed in 2.0.
+	  # This used to be how you would specify Android instrumentation tests.
+	  # Now you do it with the tests field.
+	  android:
+	    apk: ./path/to/build.apk
+	    apk_instrumentation: ./path/to/instrumentation.apk
 
 	# Branches defines overrides for particular branches. For each branch,
 	# it accepts the same properties as `defaults`. Branch configs will be
@@ -81,6 +92,7 @@ import (
 )
 
 // An AndroidConfig specifies the location of APKs after running the build steps.
+// DEPRECATED. See ConvertDeprecatedAndroid()
 type AndroidConfig struct {
 	Apk                string `yaml:"apk"`
 	ApkInstrumentation string `yaml:"apk_instrumentation"`
@@ -90,9 +102,11 @@ type AndroidConfig struct {
 // perform the build, the location of Android APKs, and the DevicePool names
 // to run on.
 type BuildManifest struct {
-	Steps      []string      `yaml:"build"`
-	Android    AndroidConfig `yaml:"android"`
-	DevicePool string        `yaml:"devicepool"`
+	Steps      []string                     `yaml:"build"`
+	Tests      map[string]map[string]string `yaml:"tests"`
+	DevicePool string                       `yaml:"devicepool"`
+	// DEPRECATED, see ConvertDeprecatedAndroid()
+	Android AndroidConfig `yaml:"android"`
 }
 
 // MergeManfiests merges together two BuildManifests, giving the second manifest
@@ -120,15 +134,40 @@ func MergeManifests(m1 *BuildManifest, m2 *BuildManifest) *BuildManifest {
 	} else {
 		merged.DevicePool = m1.DevicePool[:]
 	}
+	if len(m2.Tests) > 0 {
+		// TODO clone?
+		merged.Tests = m2.Tests
+	} else {
+		merged.Tests = m1.Tests
+	}
 	return merged
+}
+
+// ConvertDeprecatedAndroid converts the Android field into tests in the Tests
+// field. The Android field is deprecated in favor of Tests.
+func (manifest *BuildManifest) ConvertDeprecatedAndroid() {
+	if len(manifest.Android.Apk) == 0 {
+		return
+	}
+	test := map[string]string{
+		"type":                "android_instrumentation",
+		"app_apk":             manifest.Android.Apk,
+		"instrumentation_apk": manifest.Android.ApkInstrumentation,
+	}
+	if len(manifest.Tests) == 0 {
+		manifest.Tests = map[string]map[string]string{}
+	}
+	manifest.Tests["deprecated_auto_instrumentation"] = test
+	manifest.Android.Apk = ""
+	manifest.Android.ApkInstrumentation = ""
 }
 
 // IsRunnable returns true and nil if the BuildManifest is properly configured
 // to run, and returns false and an error otherwise. For example, if a BuildManifest
 // has no DevicePool, it cannot be run.
 func (manifest *BuildManifest) IsRunnable() (bool, error) {
-	if len(manifest.Android.Apk) == 0 || len(manifest.Android.ApkInstrumentation) == 0 {
-		return false, fmt.Errorf("Missing Android apk or apk_instrumentation")
+	if len(manifest.Tests) == 0 {
+		return false, fmt.Errorf("Missing tests")
 	}
 	if len(manifest.DevicePool) == 0 {
 		return false, fmt.Errorf("Missing devicepool")
@@ -164,6 +203,11 @@ func New(filename string) (*Config, error) {
 		if manifest.Steps == nil {
 			manifest.Steps = []string{}
 		}
+	}
+	// support deprecated android config
+	config.Defaults.ConvertDeprecatedAndroid()
+	for _, config := range config.Branches {
+		config.ConvertDeprecatedAndroid()
 	}
 	valid, err := config.IsValid()
 	if !valid {
