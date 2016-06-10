@@ -156,6 +156,15 @@ func New(filename string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	// build steps are optional
+	if config.Defaults.Steps == nil {
+		config.Defaults.Steps = []string{}
+	}
+	for _, manifest := range config.Branches {
+		if manifest.Steps == nil {
+			manifest.Steps = []string{}
+		}
+	}
 	valid, err := config.IsValid()
 	if !valid {
 		return nil, err

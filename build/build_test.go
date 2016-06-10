@@ -29,7 +29,9 @@ func TestNew(t *testing.T) {
 	assert.Nil(build)
 	assert.NotNil(err)
 
-	util.CopyFile("../config/testdata/config.yml", absConfigFile)
+	// this config file will fail for the "foobar" branch because it
+	// has no default devicepool. but it will succeed for the "master" branch
+	util.CopyFile("../config/testdata/config_nofoobar.yml", absConfigFile)
 
 	// at this point we should fail because the dir is not a git repo
 	build, err = New(log, tmpDir, absConfigFile)

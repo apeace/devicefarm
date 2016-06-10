@@ -38,10 +38,6 @@ devicepool_definitions:
     - +samsung_s5
 
 defaults:
-    build:
-      - echo "Foo"
-      - echo "Bar"
-
     android:
       apk: ./path/to/build.apk
       apk_instrumentation: ./path/to/instrumentation.apk

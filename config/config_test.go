@@ -61,7 +61,7 @@ func TestMergeManifests(t *testing.T) {
 func TestBuildManifestIsRunnable(t *testing.T) {
 	assert := assert.New(t)
 
-	// a complete manifest
+	// a complete manifest, should be runnable
 	m1 := BuildManifest{
 		Steps:      []string{"foo", "bar"},
 		Android:    AndroidConfig{"foo", "bar"},
@@ -71,23 +71,33 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 	assert.True(runnable)
 	assert.Nil(err)
 
-	// missing Android.Apk
+	// a complete manifest missing build steps, should be runnable
 	m2 := BuildManifest{
+		Steps:      []string{},
+		Android:    AndroidConfig{"foo", "bar"},
+		DevicePool: "foo",
+	}
+	runnable, err = m2.IsRunnable()
+	assert.True(runnable)
+	assert.Nil(err)
+
+	// missing Android.Apk, should NOT be runnable
+	m3 := BuildManifest{
 		Steps:      []string{"foo", "bar"},
 		Android:    AndroidConfig{ApkInstrumentation: "bar"},
 		DevicePool: "foo",
 	}
-	runnable, err = m2.IsRunnable()
+	runnable, err = m3.IsRunnable()
 	assert.False(runnable)
 	assert.NotNil(err)
 
-	// missing a device pool
-	m3 := BuildManifest{
+	// missing a device pool, should NOT be runnable
+	m4 := BuildManifest{
 		Steps:      []string{"foo", "bar"},
 		Android:    AndroidConfig{"foo", "bar"},
 		DevicePool: "",
 	}
-	runnable, err = m3.IsRunnable()
+	runnable, err = m4.IsRunnable()
 	assert.False(runnable)
 	assert.NotNil(err)
 }
@@ -144,7 +154,7 @@ func TestNew(t *testing.T) {
 			Apk:                "./path/to/build.apk",
 			ApkInstrumentation: "./path/to/instrumentation.apk",
 		},
-		DevicePool: "",
+		DevicePool: "samsung_s5",
 	}
 	masterBuild := BuildManifest{
 		DevicePool: "everything",
@@ -157,6 +167,13 @@ func TestNew(t *testing.T) {
 	}
 
 	// config from the file should match the expected config
+	assert.Equal(expected, *config)
+
+	// a valid config with no build
+	config, err = New("testdata/config_nobuild.yml")
+	assert.Nil(err)
+
+	expected.Defaults.Steps = []string{}
 	assert.Equal(expected, *config)
 }
 
