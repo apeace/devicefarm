@@ -74,3 +74,6 @@ git add --all vendor/
     the release.
  4. Name the release exactly the same as the tag name.
  5. Write a brief release description and publish the release.
+ 6. In the `dist/` directory, run `shasum -a 256 devicefarm_darwin_amd64`
+ 7. Use the given SHA256 to update the [Homebrew formula](https://github.com/ride/homebrew-devicefarm)
+    and push to master.

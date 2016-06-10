@@ -15,8 +15,16 @@ For OS X users, we recommend installing via
 ```
 brew tap ride/devicefarm
 brew install devicefarm
+
 # all set!
 devicefarm --version
+```
+
+When you need to update:
+
+```
+brew update
+brew upgrade devicefarm
 ```
 
 For other platforms, `devicefarm` is distributed as a binary. Simply go to
