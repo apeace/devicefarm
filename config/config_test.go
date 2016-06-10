@@ -165,10 +165,6 @@ func TestNew(t *testing.T) {
 				"instrumentation_apk": "./path/to/instrumentation.apk",
 			},
 		},
-		Android: AndroidConfig{
-			Apk:                "",
-			ApkInstrumentation: "",
-		},
 		DevicePool: "samsung_s5",
 	}
 	masterBuild := BuildManifest{
@@ -272,10 +268,6 @@ func TestConfigBranchManifest(t *testing.T) {
 				"app_apk":             "./path/to/build.apk",
 				"instrumentation_apk": "./path/to/instrumentation.apk",
 			},
-		},
-		Android: AndroidConfig{
-			Apk:                "",
-			ApkInstrumentation: "",
 		},
 		DevicePool: "everything",
 	}

@@ -75,7 +75,6 @@ func TestBuildRun(t *testing.T) {
 		Dir: tmpDir,
 		Manifest: &config.BuildManifest{
 			Steps:      []string{"echo Foo", "echo Bar"},
-			Android:    config.AndroidConfig{},
 			DevicePool: "",
 		},
 	}
