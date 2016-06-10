@@ -56,6 +56,16 @@ func TestMergeManifests(t *testing.T) {
 	// complete should override everything
 	merged = MergeManifests(&override_devicepool, &complete)
 	assert.Equal(complete, *merged)
+
+	// an empty manifest
+	// steps and tests should default to empty but non-nil values
+	empty := BuildManifest{}
+	merged = MergeManifests(&empty, &empty)
+	assert.Equal(BuildManifest{
+		Steps:      []string{},
+		Tests:      map[string]map[string]string{},
+		DevicePool: "",
+	}, *merged)
 }
 
 func TestBuildManifestIsRunnable(t *testing.T) {
