@@ -46,7 +46,10 @@ defaults:
       apk: ./path/to/build.apk
       apk_instrumentation: ./path/to/instrumentation.apk
 
-    devicepool: samsung_s5
+    # we want this config to fail for branch "foobar",
+    # but succeed for branch "master". so we leave out
+    # the default devicepool
+    #devicepool: samsung_s5
 
 branches:
   master:
