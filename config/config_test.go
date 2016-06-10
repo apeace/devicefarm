@@ -123,42 +123,22 @@ func TestBuildManifestIsRunnable(t *testing.T) {
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
 
-	// a valid, complete config
-	config, err := New("testdata/config.yml")
-	assert.Nil(err)
-
 	// build the expected config
 	devicePoolDefs := map[string][]string{
 		"samsung_s3": {
 			"(arn=device:50E24178F2274CFFA577EF130440D066) Samsung Galaxy S3 (AT&T)",
 			"(arn=device:71F791A0C3CA4E9999304A1E8484339B) Samsung Galaxy S3 (Sprint)",
 			"(arn=device:9E079354B7E9422CA52FF61B0BE345A1) Samsung Galaxy S3 (T-Mobile)",
-			"(arn=device:E024E20134534DE1AFD87038726AB05C) Samsung Galaxy S3 (Verizon)",
-			"(arn=device:BD86B8701031476BA30AF3D03F06B665) Samsung Galaxy S3 (Verizon)",
-			"(arn=device:B6100FEA90BC4B21BD6C607865AD46F2) Samsung Galaxy S3 LTE (T-Mobile)",
-			"(arn=device:5C748437DC1C409EA595B98B1D7A8EDD) Samsung Galaxy S3 Mini (AT&T)",
 		},
 		"samsung_s4": {
 			"(arn=device:D1C28D6B913C479399C0F594E1EBCAE4) Samsung Galaxy S4 (AT&T)",
-			"(arn=device:449870B9550C4840ACC1C1B59A7027FB) Samsung Galaxy S4 (AT&T)",
-			"(arn=device:2A81F49C0CBD4AB6B1C2C58C1498F51F) Samsung Galaxy S4 (AT&T)",
 			"(arn=device:33F66BE404B543669978079E905F8637) Samsung Galaxy S4 (Sprint)",
 			"(arn=device:D45C750161314335924CE0B9B7D2558E) Samsung Galaxy S4 (T-Mobile)",
-			"(arn=device:9E882A633A8E4ADC9C402AD22B1455E4) Samsung Galaxy S4 (US Cellular)",
-			"(arn=device:47869F01A5F44B8999030BC0580703E5) Samsung Galaxy S4 (Verizon)",
-			"(arn=device:6E920D51A4624ECA9EC856E0CAE733B9) Samsung Galaxy S4 (Verizon)",
-			"(arn=device:577DC08D6B964346B86610CFF090CD59) Samsung Galaxy S4 Active (AT&T)",
-			"(arn=device:F17F20E555C54544B722557AF43B015E) Samsung Galaxy S4 Tri-band (Sprint)",
-			"(arn=device:20766AF83D3A4FEF977643BFCDC2CE3A) Samsung Galaxy S4 mini (Verizon)",
 		},
 		"samsung_s5": {
 			"(arn=device:5CC0164714304CBF81BB7B7C03DFC1A1) Samsung Galaxy S5 (AT&T)",
-			"(arn=device:53586C603C5A4FA38602D11AD917B01E) Samsung Galaxy S5 (AT&T)",
 			"(arn=device:18E28478F1D54525A15C2A821B6132FA) Samsung Galaxy S5 (Sprint)",
-			"(arn=device:D6F125CF316C47B09F5190C16DE979A9) Samsung Galaxy S5 (Sprint)",
 			"(arn=device:5931A012CB1C4E68BD3434DF722ADBC8) Samsung Galaxy S5 (T-Mobile)",
-			"(arn=device:C30737D1E582482C9D06BC4878E7F795) Samsung Galaxy S5 (Verizon)",
-			"(arn=device:9710D509338C4639ADEFC5D6E99F45E6) Samsung Galaxy S5 Active (AT&T)",
 		},
 		"everything": {
 			"+samsung_s3",
@@ -191,7 +171,9 @@ func TestNew(t *testing.T) {
 		Branches:              map[string]BuildManifest{"master": masterBuild},
 	}
 
-	// config from the file should match the expected config
+	// a valid, complete config
+	config, err := New("testdata/config.yml")
+	assert.Nil(err)
 	assert.Equal(expected, *config)
 
 	// a valid config with no build
@@ -212,7 +194,7 @@ func TestNewInvalid(t *testing.T) {
 	assert := assert.New(t)
 
 	// invalid because it is not valid YAML
-	config, err := New("testdata/config_invalid.yml")
+	config, err := New("testdata/config_invalid_yaml.yml")
 	assert.NotNil(err)
 	assert.Nil(config)
 
@@ -222,12 +204,12 @@ func TestNewInvalid(t *testing.T) {
 	assert.Nil(config)
 
 	// contains valid YAML but invalid properties
-	config, err = New("testdata/config_bad.yml")
+	config, err = New("testdata/config_invalid_properties.yml")
 	assert.NotNil(err)
 	assert.Nil(config)
 
 	// missing devicepools
-	config, err = New("testdata/config_incomplete.yml")
+	config, err = New("testdata/config_nodevicepooldef.yml")
 	assert.NotNil(err)
 	assert.Nil(config)
 }
@@ -271,10 +253,7 @@ func TestConfigIsValid(t *testing.T) {
 func TestConfigBranchManifest(t *testing.T) {
 	assert := assert.New(t)
 
-	config, err := New("testdata/config.yml")
-	assert.Nil(err)
-
-	// build the expected manifest
+	// build the expected manifest for branch "master"
 	masterManifest := BuildManifest{
 		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
 		Tests: map[string]map[string]string{
@@ -290,6 +269,9 @@ func TestConfigBranchManifest(t *testing.T) {
 		},
 		DevicePool: "everything",
 	}
+
+	config, err := New("testdata/config.yml")
+	assert.Nil(err)
 	assert.Equal(masterManifest, *config.BranchManifest("master"))
 }
 

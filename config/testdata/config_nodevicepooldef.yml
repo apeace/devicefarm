@@ -1,0 +1,20 @@
+project_arn: arn:aws:devicefarm:us-west-2:026109802893:project:1124416c-bfb2-4334-817c-e211ecef7dc0
+
+# missing devicepool_definitions
+
+defaults:
+    build:
+      - echo "Foo"
+      - echo "Bar"
+
+    tests:
+      instrumentation:
+        type: android_instrumentation
+        app_apk: ./path/to/build.apk
+        instrumentation_apk: ./path/to/instrumentation.apk
+
+    devicepool: samsung_s5
+
+branches:
+  master:
+    devicepool: everything
