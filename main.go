@@ -108,6 +108,9 @@ func commandRun(c *cli.Context) {
 
 func commandBuild(c *cli.Context) {
 	build := getBuild(c)
+	if len(build.Manifest.Steps) == 0 {
+		return
+	}
 	log.Println(">> Running build... (silencing output)")
 	err := build.Run()
 	if err != nil {
