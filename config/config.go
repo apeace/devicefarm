@@ -82,7 +82,6 @@ Here is an annotated example of what a config file should look like:
 package config
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ride/devicefarm/util"
 	"gopkg.in/yaml.v2"
@@ -259,7 +258,7 @@ func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
 	flat := map[string][]string{}
 	for name, items := range defs {
 		if len(items) == 0 {
-			return nil, errors.New("DevicePool has no items: " + name)
+			return nil, fmt.Errorf("DevicePool has no items: %v", name)
 		}
 		seen := map[string]bool{}
 		deviceNames := []string{}
@@ -271,10 +270,10 @@ func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
 			item := queue[0]
 			queue = queue[1:]
 			if len(item) == 0 {
-				return nil, errors.New("Blank DevicePool item in: " + name)
+				return nil, fmt.Errorf("Blank DevicePool item in: %v", name)
 			}
 			if item == "+"+name {
-				return nil, errors.New("DevicePool circular dependency: " + name)
+				return nil, fmt.Errorf("DevicePool circular dependency: %v", name)
 			}
 			if seen[item] {
 				continue
@@ -284,7 +283,7 @@ func (config *Config) FlatDevicePoolDefinitions() (map[string][]string, error) {
 				poolRef := item[1:]
 				refItems, ok := defs[poolRef]
 				if !ok {
-					return nil, errors.New("DevicePool definition does not exist: " + poolRef)
+					return nil, fmt.Errorf("DevicePool definition does not exist: %v", poolRef)
 				}
 				queue = append(queue, refItems...)
 				continue
@@ -305,7 +304,7 @@ func DeviceArns(devices []string) ([]string, error) {
 	for _, item := range devices {
 		match := itemRegexp.FindStringSubmatch(item)
 		if len(match) < 3 {
-			return nil, errors.New("Invalid device " + item)
+			return nil, fmt.Errorf("Invalid device: %v", item)
 		}
 		arn := util.Arn{
 			Partition: "aws",
