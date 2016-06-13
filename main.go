@@ -95,15 +95,18 @@ func commandRun(c *cli.Context) {
 	pool := getDevicePool(c)
 	build := getBuild(c)
 	client := getClient()
-	apk := filepath.Join(build.Dir, build.Manifest.Android.Apk)
-	apkInstrumentation := filepath.Join(build.Dir, build.Manifest.Android.ApkInstrumentation)
-	runArn, err := client.CreateRun(build.Config.ProjectArn, *pool.Arn, apk, apkInstrumentation)
-	if err != nil {
-		log.Fatalln(err)
+	for name, test := range build.Manifest.Tests {
+		test["app"] = filepath.Join(build.Dir, test["app"])
+		test["test"] = filepath.Join(build.Dir, test["test"])
+		runArn, err := client.CreateRun(build.Config.ProjectArn, *pool.Arn, test)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		re := regexp.MustCompile("run:([^/]+)/([^/]+)")
+		parts := re.FindStringSubmatch(runArn)
+		log.Printf("%v: ", name)
+		log.Printf("https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/projects/%s/runs/%s\n", parts[1], parts[2])
 	}
-	re := regexp.MustCompile("run:([^/]+)/([^/]+)")
-	parts := re.FindStringSubmatch(runArn)
-	log.Printf("https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/projects/%s/runs/%s\n", parts[1], parts[2])
 }
 
 func commandBuild(c *cli.Context) {

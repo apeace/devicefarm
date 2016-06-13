@@ -25,8 +25,8 @@ defaults:
     tests:
       instrumentation:
         type: android_instrumentation
-        app_apk: ./path/to/build.apk
-        instrumentation_apk: ./path/to/instrumentation.apk
+        app: ./path/to/build.apk
+        test: ./path/to/instrumentation.apk
 
     devicepool: samsung_s5
 

@@ -42,9 +42,11 @@ defaults:
       - echo "Foo"
       - echo "Bar"
 
-    android:
-      apk: ./path/to/build.apk
-      apk_instrumentation: ./path/to/instrumentation.apk
+    tests:
+      instrumentation:
+        type: android_instrumentation
+        app: ./path/to/build.apk
+        test: ./path/to/instrumentation.apk
 
     # we want this config to fail for branch "foobar",
     # but succeed for branch "master". so we leave out

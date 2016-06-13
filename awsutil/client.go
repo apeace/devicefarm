@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -243,22 +245,35 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 	}
 }
 
-func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation string) (string, error) {
+func (df *DeviceFarm) CreateRun(projectArn, poolArn string, test map[string]string) (string, error) {
+	testTypeName := test["type"]
+	appFile := test["app"]
+	appFileBase := filepath.Base(appFile)
+	testFile := test["test"]
+	testFileBase := filepath.Base(testFile)
+
+	testType, ok := TEST_TYPES[testTypeName]
+	if !ok {
+		return "", fmt.Errorf("Unknown test type: %v", testTypeName)
+	}
+
 	log := df.Log
 	log.Println(">> Uploading files...")
-	log.Println(apk)
-	appArn, err := df.CreateUpload(projectArn, apk, "ANDROID_APP", "app.apk")
+
+	log.Println(appFileBase)
+	appArn, err := df.CreateUpload(projectArn, appFile, testType.AppUploadType, appFileBase)
 	if err != nil {
 		return "", err
 	}
-	log.Println(apkInstrumentation)
-	instArn, err := df.CreateUpload(projectArn, apkInstrumentation, "INSTRUMENTATION_TEST_PACKAGE", "instrumentation.apk")
+
+	log.Println(testFileBase)
+	testArn, err := df.CreateUpload(projectArn, testFile, testType.TestUploadType, testFileBase)
 	if err != nil {
 		return "", err
 	}
 
 	log.Println(">> Waiting for files to be processed...")
-	err = df.WaitForUploadsToSucceed(60000, 5000, appArn, instArn)
+	err = df.WaitForUploadsToSucceed(60000, 5000, appArn, testArn)
 	if err != nil {
 		return "", err
 	}
@@ -268,8 +283,8 @@ func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation str
 		DevicePoolArn: aws.String(poolArn),
 		ProjectArn:    aws.String(projectArn),
 		Test: &devicefarm.ScheduleRunTest{
-			Type:           aws.String("INSTRUMENTATION"),
-			TestPackageArn: aws.String(instArn),
+			Type:           aws.String(testType.TestType),
+			TestPackageArn: aws.String(testArn),
 		},
 		AppArn: aws.String(appArn),
 	}
@@ -278,4 +293,23 @@ func (df *DeviceFarm) CreateRun(projectArn, poolArn, apk, apkInstrumentation str
 		return "", err
 	}
 	return *r.Run.Arn, nil
+}
+
+type TestType struct {
+	TestType       string
+	AppUploadType  string
+	TestUploadType string
+}
+
+var TEST_TYPES = map[string]TestType{
+	"android_instrumentation": {
+		TestType:       devicefarm.TestTypeInstrumentation,
+		AppUploadType:  devicefarm.UploadTypeAndroidApp,
+		TestUploadType: devicefarm.UploadTypeInstrumentationTestPackage,
+	},
+	"android_appium_python": {
+		TestType:       devicefarm.TestTypeAppiumPython,
+		AppUploadType:  devicefarm.UploadTypeAndroidApp,
+		TestUploadType: devicefarm.UploadTypeAppiumPythonTestPackage,
+	},
 }

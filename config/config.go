@@ -53,8 +53,8 @@ Here is an annotated example of what a config file should look like:
 	  tests:
 	    my_instrumentation:
 	      type: android_instrumentation
-	      app_apk: ./path/to/build.apk
-	      instrumentation_apk: ./path/to/instrumentation.apk
+	      app: ./path/to/build.apk
+	      test: ./path/to/instrumentation.apk
 
 	  # The device pool name that tests should be run on.
 	  devicepool: samsung_s4
@@ -158,9 +158,9 @@ func (manifest *BuildManifest) ConvertDeprecatedAndroid() {
 		return
 	}
 	test := map[string]string{
-		"type":                "android_instrumentation",
-		"app_apk":             manifest.Android.Apk,
-		"instrumentation_apk": manifest.Android.ApkInstrumentation,
+		"type": "android_instrumentation",
+		"app":  manifest.Android.Apk,
+		"test": manifest.Android.ApkInstrumentation,
 	}
 	if len(manifest.Tests) == 0 {
 		manifest.Tests = map[string]map[string]string{}

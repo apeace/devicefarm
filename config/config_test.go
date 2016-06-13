@@ -160,9 +160,9 @@ func TestNew(t *testing.T) {
 		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
 		Tests: map[string]map[string]string{
 			"instrumentation": {
-				"type":                "android_instrumentation",
-				"app_apk":             "./path/to/build.apk",
-				"instrumentation_apk": "./path/to/instrumentation.apk",
+				"type": "android_instrumentation",
+				"app":  "./path/to/build.apk",
+				"test": "./path/to/instrumentation.apk",
 			},
 		},
 		DevicePool: "samsung_s5",
@@ -264,9 +264,9 @@ func TestConfigBranchManifest(t *testing.T) {
 		Steps: []string{"echo \"Foo\"", "echo \"Bar\""},
 		Tests: map[string]map[string]string{
 			"instrumentation": {
-				"type":                "android_instrumentation",
-				"app_apk":             "./path/to/build.apk",
-				"instrumentation_apk": "./path/to/instrumentation.apk",
+				"type": "android_instrumentation",
+				"app":  "./path/to/build.apk",
+				"test": "./path/to/instrumentation.apk",
 			},
 		},
 		DevicePool: "everything",
