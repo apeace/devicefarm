@@ -1,7 +1,7 @@
 package util
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -32,7 +32,7 @@ type Arn struct {
 func NewArn(arn string) (*Arn, error) {
 	match := ArnRegexp.FindStringSubmatch(arn)
 	if len(match) != 6 {
-		return nil, errors.New("Invalid ARN: " + arn)
+		return nil, fmt.Errorf("Invalid ARN: %v", arn)
 	}
 	return &Arn{
 		Partition: match[1],

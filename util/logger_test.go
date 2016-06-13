@@ -1,7 +1,7 @@
 package util
 
 import (
-	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -24,7 +24,7 @@ func TestCaptureLogger(t *testing.T) {
 type errorWriter struct{}
 
 func (w *errorWriter) Write(b []byte) (n int, err error) {
-	return 0, errors.New("Fake error")
+	return 0, fmt.Errorf("Fake error")
 }
 
 func TestStandardLogger(t *testing.T) {

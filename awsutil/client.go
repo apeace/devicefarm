@@ -3,7 +3,6 @@ package awsutil
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -197,7 +196,7 @@ func (df *DeviceFarm) UploadSucceeded(arn string) (bool, error) {
 		return false, err
 	}
 	if *r.Upload.Status == devicefarm.UploadStatusFailed {
-		return false, errors.New("Upload failed: " + arn)
+		return false, fmt.Errorf("Upload failed: %v", arn)
 	}
 	if *r.Upload.Status == devicefarm.UploadStatusSucceeded {
 		return true, nil
@@ -239,7 +238,7 @@ func (df *DeviceFarm) WaitForUploadsToSucceed(timeoutMs, delayMs int, arns ...st
 	select {
 	case <-time.After(time.Duration(timeoutMs) * time.Millisecond):
 		quitchan <- true
-		return errors.New("Timed out")
+		return fmt.Errorf("Timed out")
 	case err := <-errchan:
 		return err
 	}

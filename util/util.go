@@ -4,7 +4,7 @@ Package util provides utility functions used by other packages.
 package util
 
 import (
-	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -13,7 +13,7 @@ import (
 
 // ErrDetached is returned if it looks like a Git repo is in a
 // detached state.
-var ErrGitDetached = errors.New("Your repo looks like it is in a detached state")
+var ErrGitDetached = fmt.Errorf("Your repo looks like it is in a detached state")
 
 // Cmd creates an exec.Cmd to run in the given directory.
 func Cmd(dir string, command string) *exec.Cmd {

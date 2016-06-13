@@ -1,7 +1,7 @@
 package awsutil
 
 import (
-	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/devicefarm"
@@ -113,7 +113,7 @@ func TestSearchDevices(t *testing.T) {
 	assert.Equal(DeviceList{iosDevice}, result)
 
 	// should fail due to error
-	mock.enqueue(nil, errors.New("fake error"))
+	mock.enqueue(nil, fmt.Errorf("fake error"))
 	result, err = client.SearchDevices("", false, false)
 	assert.NotNil(err)
 	assert.Nil(result)
@@ -139,7 +139,7 @@ func TestListDevicePools(t *testing.T) {
 	assert.Equal(output.DevicePools, pools)
 
 	// should fail due to error
-	mock.enqueue(nil, errors.New("fake error"))
+	mock.enqueue(nil, fmt.Errorf("fake error"))
 	pools, err = client.ListDevicePools("foo")
 	assert.NotNil(err)
 	assert.Nil(pools)
@@ -178,7 +178,7 @@ func TestCreateDevicePool(t *testing.T) {
 	assert.Equal(expectedInput, *actualInput)
 
 	// should fail due to error
-	mock.enqueue(nil, errors.New("fake error"))
+	mock.enqueue(nil, fmt.Errorf("fake error"))
 	pool, err = client.CreateDevicePool("arn", "name", []string{"foo"})
 	assert.NotNil(err)
 	assert.Nil(pool)
@@ -219,7 +219,7 @@ func TestUpdateDevicePool(t *testing.T) {
 	assert.Equal(expectedInput, *actualInput)
 
 	// should fail due to error
-	mock.enqueue(nil, errors.New("fake error"))
+	mock.enqueue(nil, fmt.Errorf("fake error"))
 	pool, err = client.UpdateDevicePool(pool, []string{"foo"})
 	assert.NotNil(err)
 	assert.Nil(pool)
@@ -316,7 +316,7 @@ func TestCreateUpload(t *testing.T) {
 	assert.Equal("uploadArn", uploadArn)
 
 	// should fail due to error
-	mock.enqueue(nil, errors.New("fake error"))
+	mock.enqueue(nil, fmt.Errorf("fake error"))
 	_, err = client.CreateUpload("projectArn", filename, "uploadType", "name")
 	assert.NotNil(err)
 }
@@ -367,7 +367,7 @@ func TestWaitForUploadsToSucceed(t *testing.T) {
 	assert.NotNil(err)
 
 	// should fail due to error
-	mock.enqueue(nil, errors.New("Fake error"))
+	mock.enqueue(nil, fmt.Errorf("Fake error"))
 	err = client.WaitForUploadsToSucceed(1000, 0, "arn123")
 	assert.NotNil(err)
 
