@@ -13,7 +13,7 @@ For OS X users, we recommend installing via
 [Homebrew](http://brew.sh/):
 
 ```
-brew tap ride/devicefarm
+brew tap apeace/devicefarm
 brew install devicefarm
 
 # all set!
@@ -28,7 +28,7 @@ brew upgrade devicefarm
 ```
 
 For other platforms, `devicefarm` is distributed as a binary. Simply go to
-[Releases](https://github.com/ride/devicefarm/releases/) and download the
+[Releases](https://github.com/apeace/devicefarm/releases/) and download the
 latest binary for your platform.
 
 ## Setup
@@ -135,11 +135,11 @@ GLOBAL OPTIONS:
 
 ## Limitations, bugs & future work
 
-See our [issue tracker](https://github.com/ride/devicefarm/issues) for known
+See our [issue tracker](https://github.com/apeace/devicefarm/issues) for known
 bugs, improvements, and maintenance work.
 
 Right now only Android instrumentation tests are supported. As part of our
-[2.0 Milestone](https://github.com/ride/devicefarm/milestones/2.0) we'll be
+[2.0 Milestone](https://github.com/apeace/devicefarm/milestones/2.0) we'll be
 adding:
 
  * Support for all test types (including iOS and web).
@@ -153,4 +153,4 @@ adding:
 
 ## License
 
-Copyright © 2016 Ride Group, Inc. [MIT](./LICENSE)
+Copyright © 2016 Andrew Peace & Ride Group, Inc. [MIT](./LICENSE)
